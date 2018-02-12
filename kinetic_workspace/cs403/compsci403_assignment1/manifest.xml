@@ -1,0 +1,19 @@
+<package>
+  <description brief="compsci403_assignment1">
+
+     compsci403_assignment1
+
+  </description>
+  <author>Tiffany Q. Liu</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/compsci403_assignment1</url>
+  <depend package="std_msgs"/>
+  <depend package="sensor_msgs"/>
+  <depend package="visualization_msgs"/>
+  <depend package="roscpp"/>
+  <depend package="rospy"/>
+
+</package>
+
+
