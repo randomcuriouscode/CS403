@@ -1,0 +1,10 @@
+float32 X
+float32 Y
+float32 Z
+float32 fx
+float32 fy
+float32 px
+float32 py
+---
+int32 x
+int32 y
