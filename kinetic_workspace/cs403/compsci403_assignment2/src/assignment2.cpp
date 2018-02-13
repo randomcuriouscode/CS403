@@ -18,11 +18,13 @@
 
 ros::ServiceServer g_GetPixelFrom3DPointSrv; // Service /COMPSCI403/GetPixelFrom3DPoint
 ros::ServiceServer g_Get3DPointFromDepthSrv; // Service /COMPSCI403/Get3DPointFromDepth
-
+ros::ServiceServer g_GetDepthFromDisparitySrv; // Service /COMPSCI403/GetDepthFromDisparity
+ros::ServiceServer g_Get3DPointFromDisparitySrv; // Service /COMPSCI403/Get3DPointFromDisparity
 
 // Define service and callback functions
 
 /*
+1.
  The coordinates of the 3D point and the pin-hole camera intrinsics will be the 
  inputs, and the pixel coordinates of the image point will be the output of the service
 */
@@ -43,12 +45,16 @@ bool GetPixelFrom3DPointCallback(compsci403_assignment2::GetPixelFrom3DPointSrv:
   }
   else
   {
+    ROS_ERROR("GetPixelFrom3DPointCallback recieved a Z=0");
     return false;
   }
 
   return true;
 }
 
+/*
+  2.
+*/
 bool Get3DPointFromDepthCallback(compsci403_assignment2::Get3DPointFromDepthSrv::Request &req,
                                   compsci403_assignment2::Get3DPointFromDepthSrv::Response &res)
 {
@@ -60,6 +66,67 @@ bool Get3DPointFromDepthCallback(compsci403_assignment2::Get3DPointFromDepthSrv:
   
   ROS_DEBUG("Get3DPointFromDepthCallback(): x: %f, y: %f, depth: %f, fx: %f, fy: %f, px: %f, py: %f",
             x, y, depth, fx, fy, px, py);
+
+  res.X = XZ_ratio * depth;
+  res.Y = YZ_ratio * depth;
+  res.Z = depth;
+
+  return true;
+}
+
+/*
+  3.
+*/
+bool GetDepthFromDisparityCallback(compsci403_assignment2::GetDepthFromDisparitySrv::Request &req,
+                                    compsci403_assignment2::GetDepthFromDisparitySrv::Response &res)
+{
+  int32_t disparity = req.disparity;
+  float a = req.a;
+  float b = req.b;
+
+  float denom = (a + (b * disparity));
+
+  ROS_DEBUG("GetDepthFromDisparityCallback(): disparity: %i, a: %f, b:%f, denom: %f", 
+              disparity, a, b ,denom);
+
+  if (denom != 0)
+  {
+    res.depth = 1 / denom; // d = 1 / (a + br)
+  }
+  else
+  {
+    ROS_ERROR("GetDepthFromDisparityCallback(): divide by zero denominator");
+    return false;
+  }
+  
+  return true;
+}
+
+/*
+  4.
+*/
+bool Get3DPointFromDisparityCallback(compsci403_assignment2::Get3DPointFromDisparitySrv::Request &req,
+                                      compsci403_assignment2::Get3DPointFromDisparitySrv::Response &res)
+{
+  int32_t x = req.x, y = req.y, disparity = req.disparity;
+  float fx = req.fx, fy = req.fy, px = req.px, py = req.py,
+              a = req.a, b = req.b;
+
+  int XZ_ratio = (x - px) / fx; // gives X/Z
+  int YZ_ratio = (y - py) / fy; // gives Y/Z
+
+  float denom = (a + (b * disparity));
+
+  int depth = 0;
+  if (denom != 0)
+  {
+    depth = 1 / denom; // d = 1 / (a + br)
+  }
+  else
+  {
+    ROS_ERROR("Get3DPointFromDisparityCallback(): divide by zero denominator");
+    return false;
+  }
 
   res.X = XZ_ratio * depth;
   res.Y = YZ_ratio * depth;
@@ -100,6 +167,12 @@ int main(int argc, char **argv) {
 
   // 2. Provide service named /COMPSCI403/Get3DPointFromDepth
   g_Get3DPointFromDepthSrv = n.advertiseService("/COMPSCI403/Get3DPointFromDepth", Get3DPointFromDepthCallback);
+
+  // 3. Provide service named /COMPSCI403/GetDepthFromDisparity
+  g_GetDepthFromDisparitySrv = n.advertiseService("/COMPSCI403/GetDepthFromDisparity", GetDepthFromDisparityCallback);
+
+  // 4. Provide service named /COMPSCI403/Get3DPointFromDisparity
+  g_Get3DPointFromDisparitySrv = n.advertiseService("/COMPSCI403/Get3DPointFromDisparity", Get3DPointFromDepthCallback);
 
   ros::spin();
 
