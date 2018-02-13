@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <ros/ros.h>
+#include <ros/console.h>
 #include <std_msgs/String.h>
 #include <sstream>
 #include <vector>
@@ -23,9 +24,9 @@ ros::ServiceServer g_Get3DPointFromDepthSrv; // Service /COMPSCI403/Get3DPointFr
 ros::ServiceServer g_GetDepthFromDisparitySrv; // Service /COMPSCI403/GetDepthFromDisparity
 ros::ServiceServer g_Get3DPointFromDisparitySrv; // Service /COMPSCI403/Get3DPointFromDisparity
 
-ros::Publisher g_PointCloudPub;
+ros::Publisher g_PointCloudPub; // Publisher /COMPSCI403/PointCloud
 
-ros::Subscriber g_DepthImageSub;
+ros::Subscriber g_DepthImageSub; // Subscriber COMPSCI403/DepthImage
 
 ros::ServiceClient g_GetIntrinsicsCl; // Client /COMPSCI403/GetIntrinsics
 
@@ -71,8 +72,8 @@ bool Get3DPointFromDepthCallback(compsci403_assignment2::Get3DPointFromDepthSrv:
   float x = req.x, y = req.y, depth = req.depth, fx = req.fx,
         fy = req.fy, px = req.px, py = req.py;
 
-  int XZ_ratio = (x - px) / fx; // gives X/Z
-  int YZ_ratio = (y - py) / fy; // gives Y/Z
+  float XZ_ratio = (x - px) / fx; // gives X/Z
+  float YZ_ratio = (y - py) / fy; // gives Y/Z
   
   ROS_DEBUG("Get3DPointFromDepthCallback(): x: %f, y: %f, depth: %f, fx: %f, fy: %f, px: %f, py: %f",
             x, y, depth, fx, fy, px, py);
@@ -122,8 +123,8 @@ bool Get3DPointFromDisparityCallback(compsci403_assignment2::Get3DPointFromDispa
   float fx = req.fx, fy = req.fy, px = req.px, py = req.py,
               a = req.a, b = req.b;
 
-  int XZ_ratio = (x - px) / fx; // gives X/Z
-  int YZ_ratio = (y - py) / fy; // gives Y/Z
+  float XZ_ratio = (x - px) / fx; // gives X/Z
+  float YZ_ratio = (y - py) / fy; // gives Y/Z
 
   float denom = (a + (b * disparity));
 
@@ -153,6 +154,7 @@ void DepthImageCallback(const sensor_msgs::Image& image) {
   const int image_height = image.height;
 
   sensor_msgs::PointCloud pc; // create pointcloud
+  pc.header = image.header;
 
   for (int y = 0; y < image_height; ++y) {
     for (int x = 0; x < image_width; ++x) {
@@ -179,13 +181,15 @@ void DepthImageCallback(const sensor_msgs::Image& image) {
 
       float depth = 1 / denom; // calculate depth from kinect formula
 
-      int XZ_ratio = (x - g_px) / g_fx; // gives X/Z
-      int YZ_ratio = (y - g_py) / g_fy; // gives Y/Z
+      float XZ_ratio = (x - g_px) / g_fx; // gives X/Z
+      float YZ_ratio = (y - g_py) / g_fy; // gives Y/Z
 
       geometry_msgs::Point32 p; // create point
       p.x = XZ_ratio * depth;
       p.y = YZ_ratio * depth;
       p.z = depth;
+
+      ROS_DEBUG("X: %f, Y: %f, Z: %f", p.x, p.y, p.z);
 
       pc.points.push_back(p); // add to point cloud points vector
     }
@@ -240,8 +244,16 @@ int main(int argc, char **argv) {
 
   // 5c. Subscribe to topic named /COMPSCI403/DepthImage
   g_DepthImageSub = n.subscribe("/COMPSCI403/DepthImage", 1000, DepthImageCallback);
+
+  ROS_DEBUG("All globals initialized, spinning at 30hz...");
   
-  ros::spin();
+  ros::Rate r(30); // limit spin rate to 30 hz.
+
+  while (ros::ok())
+  {
+    ros::spinOnce();
+    r.sleep();
+  }
 
   return 0;
 }
