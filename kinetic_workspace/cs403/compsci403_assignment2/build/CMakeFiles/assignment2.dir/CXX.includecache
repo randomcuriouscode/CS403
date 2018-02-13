@@ -135,9 +135,13 @@ std_msgs/String.h
 -
 sstream
 -
+vector
+-
 sensor_msgs/Image.h
 -
 sensor_msgs/PointCloud.h
+-
+geometry_msgs/Point32.h
 -
 compsci403_assignment2/Get3DPointFromDepthSrv.h
 /home/rpg711/kinetic_workspace/cs403/compsci403_assignment2/src/compsci403_assignment2/Get3DPointFromDepthSrv.h

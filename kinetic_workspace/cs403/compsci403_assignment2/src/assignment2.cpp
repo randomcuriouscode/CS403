@@ -2,9 +2,11 @@
 #include <ros/ros.h>
 #include <std_msgs/String.h>
 #include <sstream>
+#include <vector>
 
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud.h>
+#include <geometry_msgs/Point32.h>
 
 #include "compsci403_assignment2/Get3DPointFromDepthSrv.h"
 #include "compsci403_assignment2/Get3DPointFromDisparitySrv.h"
@@ -20,6 +22,14 @@ ros::ServiceServer g_GetPixelFrom3DPointSrv; // Service /COMPSCI403/GetPixelFrom
 ros::ServiceServer g_Get3DPointFromDepthSrv; // Service /COMPSCI403/Get3DPointFromDepth
 ros::ServiceServer g_GetDepthFromDisparitySrv; // Service /COMPSCI403/GetDepthFromDisparity
 ros::ServiceServer g_Get3DPointFromDisparitySrv; // Service /COMPSCI403/Get3DPointFromDisparity
+
+ros::Publisher g_PointCloudPub;
+
+ros::Subscriber g_DepthImageSub;
+
+ros::ServiceClient g_GetIntrinsicsCl; // Client /COMPSCI403/GetIntrinsics
+
+float g_fx, g_fy, g_px, g_py, g_a, g_b;
 
 // Define service and callback functions
 
@@ -135,9 +145,15 @@ bool Get3DPointFromDisparityCallback(compsci403_assignment2::Get3DPointFromDispa
   return true;
 }
 
+/*
+  5.
+*/
 void DepthImageCallback(const sensor_msgs::Image& image) {
   const int image_width = image.width;
   const int image_height = image.height;
+
+  sensor_msgs::PointCloud pc; // create pointcloud
+
   for (int y = 0; y < image_height; ++y) {
     for (int x = 0; x < image_width; ++x) {
       uint16_t byte0 = image.data[2 * (x + y * image_width) + 0];
@@ -146,13 +162,36 @@ void DepthImageCallback(const sensor_msgs::Image& image) {
         std::swap(byte0, byte1);
       }
       // Combine the two bytes to form a 16 bit value, and disregard the
-      // most significant 4 bits to extract the lowest 12 bits.
-      const uint16_t raw_depth = ((byte0 << 8) | byte1) & 0x7FF;
+      // most significant 4 bits to extract the lowest 11 bits.
+      const uint16_t raw_depth = ((byte0 << 8) | byte1) & 0x7FF; // raw depth disparity
 
       // Reconstruct 3D point from x, y, raw_depth, and sensor intrinsics
 
+      float denom = (g_a + (g_b * (float)raw_depth));
+
+      ROS_DEBUG("DepthImageCallback(): disparity: %i, a: %f, b:%f, denom: %f", 
+                  raw_depth, g_a, g_b , denom);
+
+      if (denom == 0)
+      {
+        ROS_ERROR("GetDepthFromDisparityCallback(): divide by zero denominator");
+      }
+
+      float depth = 1 / denom; // calculate depth from kinect formula
+
+      int XZ_ratio = (x - g_px) / g_fx; // gives X/Z
+      int YZ_ratio = (y - g_py) / g_fy; // gives Y/Z
+
+      geometry_msgs::Point32 p; // create point
+      p.x = XZ_ratio * depth;
+      p.y = YZ_ratio * depth;
+      p.z = depth;
+
+      pc.points.push_back(p); // add to point cloud points vector
     }
   }
+
+  g_PointCloudPub.publish(pc); // publish the point cloud
 }
 
 int main(int argc, char **argv) {
@@ -174,6 +213,34 @@ int main(int argc, char **argv) {
   // 4. Provide service named /COMPSCI403/Get3DPointFromDisparity
   g_Get3DPointFromDisparitySrv = n.advertiseService("/COMPSCI403/Get3DPointFromDisparity", Get3DPointFromDepthCallback);
 
+  // 5a. Create client to /COMPSCI403/GetIntrinsics
+  g_GetIntrinsicsCl = n.serviceClient<compsci403_assignment2::GetIntrinsicsSrv>("/COMPSCI403/GetIntrinsics");
+
+  compsci403_assignment2::GetIntrinsicsSrv pcp_payload;
+
+  if (g_GetIntrinsicsCl.call(pcp_payload))
+  {
+    g_fx = (float)pcp_payload.response.fx;
+    g_fy = (float)pcp_payload.response.fy;
+    g_px = (float)pcp_payload.response.px;
+    g_py = (float)pcp_payload.response.py;
+    g_a = (float)pcp_payload.response.a;
+    g_b = (float)pcp_payload.response.b;
+
+    ROS_INFO("DepthImageCallback()::GetIntrinsics(): fx: %f, fy: %f, px: %f, py: %f, a: %f, b: %f", 
+      g_fx, g_fy, g_px, g_py, g_a, g_b);
+  }
+  else
+  {
+    ROS_ERROR("DepthImageCallback(): Failed to call COMPSCI403/GetIntrinsics");
+  }
+
+  // 5b. Create publisher to /COMPSCI403/PointCloud
+  g_PointCloudPub = n.advertise<sensor_msgs::PointCloud>("COMPSCI403/PointCloud", 1000);
+
+  // 5c. Subscribe to topic named /COMPSCI403/DepthImage
+  g_DepthImageSub = n.subscribe("/COMPSCI403/DepthImage", 1000, DepthImageCallback);
+  
   ros::spin();
 
   return 0;
