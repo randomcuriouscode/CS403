@@ -25,7 +25,7 @@ using geometry_msgs::Point32;
 
 ros::ServiceServer g_TransformPointSrv; // /COMPSCI403/TransformPoint
 ros::ServiceServer g_FitMinimalPlaneSrv; // /COMPSCI403/FitMinimalPlane
-
+ros::ServiceServer g_FindInliersSrv; // //COMPSCI403/FindInliers
 
 // Define service and callback functions
 
@@ -61,12 +61,35 @@ bool TransformPointCallback(compsci403_assignment3::TransformPointSrv::Request &
 	return true;
 }
 
+bool FitMinimalPlaneCallback(compsci403_assignment3::FitMinimalPlaneSrv::Request &req,
+							compsci403_assignment3::FitMinimalPlaneSrv::Response &res)
+{
+	Vector3f v1 (req.P2.x - req.P1.x, 
+				req.P2.y - req.P1.y,
+				req.P2.z - req.p1.z ); //Vector P1P2
+	Vector3f v2 (req.P3.x - req.P1.x,
+				req.P3.y - req.P1.y,
+				req.P3.z - req.P1.z);
+
+	Vector3f n = v1.cross(v2); // calc normal
+
+	Point32 p_n;
+
+	p_n.x = n.x();
+	p_n.y = n.y();
+	p_n.z = n.z();
+
+	res.n = p_n;
+	res.P0 = req.P1; // any point on plane can be P0
+
+	return true;
+}
+
 int main(int argc, char **argv) {
   ros::init(argc, argv, "assignment3");
   ros::NodeHandle n;
 
   // Perform operations defined in Assignment 3
-
 
   // 1. Provide service TransformPoint
   g_TransformPointSrv = n.advertiseService("COMPSCI403/TransformPoint", TransformPointCallback);
