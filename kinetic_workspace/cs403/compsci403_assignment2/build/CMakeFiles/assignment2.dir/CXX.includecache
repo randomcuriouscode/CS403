@@ -131,6 +131,8 @@ algorithm
 -
 ros/ros.h
 -
+ros/console.h
+-
 std_msgs/String.h
 -
 sstream
