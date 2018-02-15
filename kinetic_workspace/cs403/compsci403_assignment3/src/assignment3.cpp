@@ -26,10 +26,12 @@ using geometry_msgs::Point32;
 ros::ServiceServer g_TransformPointSrv; // /COMPSCI403/TransformPoint
 ros::ServiceServer g_FitMinimalPlaneSrv; // /COMPSCI403/FitMinimalPlane
 ros::ServiceServer g_FindInliersSrv; // /COMPSCI403/FindInliers
-ros::ServiceServer g_FitBestPlaneSrv; // /
+ros::ServiceServer g_FitBestPlaneSrv; // /COMPSCI403/FitBestPlane
 
-const float ESTIMATED_FIT_POINTS = .75f;
-const size_t RANSAC_MAX_ITER = 40;
+const float RANSAC_ESTIMATED_FIT_POINTS = .75f; // % points estimated to fit the model
+const size_t RANSAC_MAX_ITER = 40; // max RANSAC iterations
+const size_t RANDOM_MAX_TRIES = 100; // max RANSAC random point tries per iteration
+const float RANSAC_THRESHOLD = .5f; // threshold to determine 
 
 // Define service and callback functions
 
@@ -133,14 +135,58 @@ bool FitBestPlaneCallback(compsci403_assignment3::FitBestPlaneSrv::Request &req,
 						  compsci403_assignment3::FitBestPlaneSrv::Response &res)
 {
 	std::vector<Point32> all_points = req.P;
-	for (int iterations = 0; iterations < RANSAC_MAX_ITER; iterations ++)
+
+
+	for (size_t iterations = 0; iterations < RANSAC_MAX_ITER; iterations ++)
 	{
-		// get 3 random points 
-		Point32 p1 = *random_element(all_points.begin(), all_points.end());
-		Point32 p2 = *random_element(all_points.begin(), all_points.end());
-		Point32 p3 = *random_element(all_points.begin(), all_points.end());
+		Point32 p1,p2,p3;
+		Vector3f v1;
+		Vector3f v2;
+
+		Vector3f n_hat; // keep track of the current plane model
+		Vector3f P0;
+		std::vector<Point32> might_agree; // list of points that agree with model within 
+
+		bool found = false;
+
+		// try RANDOM_MAX_TRIES times to get random 3 points
+		for (size_t tries = 0; tries < RANDOM_MAX_TRIES; tries ++) // try to get unique random points 100 times
+		{
+			// get 3 random points 
+			p1 = *random_element(all_points.begin(), all_points.end());
+			p2 = *random_element(all_points.begin(), all_points.end());
+			p3 = *random_element(all_points.begin(), all_points.end());
+
+			v1 = Vector3f (p2.x - p1.x, 
+					p2.y - p1.y,
+					p2.z - p1.z ); //Vector P1P2
+			v2 = Vector3f (p3.x - p1.x,
+					p3.y - p1.y,
+					p3.z - p1.z); //Vector P1P3
+
+			if (v1.dot(v2) != 0) // dot product != 0 means we've found 3 nonlinear points
+			{
+				found = true;
+				break; 
+			}
+		}
+		if (!found) // could not find 3 random nonlinear points in 100 tries, go to next iteration
+		{
+			ROS_ERROR("FitBestPlaneCallback(): Could not find 3 random nonlinear points in %ld tries, going on to iteration %ld", RANDOM_MAX_TRIES, iterations + 1);
+			continue;
+		}
+
+		// nonlinear random points exist past here
+
+		// fit a plane to p1, p2, p3
+
+		Vector3f n = v1.cross(v2); // calculate normal of plane
+
+
+
+
 	}
-	return true;
+	return false;
 }
 
 int main(int argc, char **argv) {
