@@ -22,6 +22,7 @@ void EigenExamples() {
   v1.y() = 5.0;
   v1.z() = 6.0;
   cout << "\nv1:\n" << v1 << "\n";
+  cout << "v1(0): " << v1(1);
 
   // Access coordinate values of the vector in 2 different ways.
   Vector3f v2 = v1;
@@ -108,6 +109,18 @@ void EigenExamples() {
     const Vector3f eigen_vector = eigen_vectors.col(i);
     cout << "\nEigen value " << i << ": " << eigen_value
          << "\nEigen vector " << i << ":\n" << eigen_vector << "\n";
+
+   Eigen::MatrixXf tonysthing(10,3);
+
+   for (int i = 0; i < 10; i ++)
+   {
+    for (int j = 0; j < 3; j ++)
+    {
+      tonysthing(i, j) = 10* i + j;
+    }
+   }
+
+   cout << "Tonys thing : " << tonysthing << std::endl;
   }
 }
 

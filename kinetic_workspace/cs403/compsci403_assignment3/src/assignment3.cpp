@@ -31,7 +31,7 @@ ros::ServiceServer g_FitBestPlaneSrv; // /COMPSCI403/FitBestPlane
 const float RANSAC_ESTIMATED_FIT_POINTS = .75f; // % points estimated to fit the model
 const size_t RANSAC_MAX_ITER = 40; // max RANSAC iterations
 const size_t RANDOM_MAX_TRIES = 100; // max RANSAC random point tries per iteration
-const float RANSAC_THRESHOLD = .5f; // threshold to determine 
+const float RANSAC_THRESHOLD = .5f; // threshold to determine what constitutes a close point to a plane
 
 // Define service and callback functions
 
@@ -182,7 +182,7 @@ bool run_RANSAC(const std::vector<Point32> all_points, Vector3f *out_p0, Vector3
 
 		// at some point, the original p0, p1, p2 will be iterated over and added to agreed points
 
-		for (std::vector<Point32>::iterator it = all_points.begin(); 
+		for (std::vector<Point32>::const_iterator it = all_points.begin(); 
 		 it != all_points.end(); it++)
 		{
 			Vector3f M  (it->x - P0.x(),
@@ -195,8 +195,9 @@ bool run_RANSAC(const std::vector<Point32> all_points, Vector3f *out_p0, Vector3
 			{   // add to inlier points list
 				points_agree.push_back(*it); 
 			}
+		} // end points loop 
 
-			if (points_agree.size() / all_points.size() > RANSAC_ESTIMATED_FIT_POINTS)
+		if (points_agree.size() / all_points.size() > RANSAC_ESTIMATED_FIT_POINTS)
 			{	// if points agree / total points > estimated % points fitting
 				// fit to points_agree.size() points
 
@@ -212,55 +213,54 @@ bool run_RANSAC(const std::vector<Point32> all_points, Vector3f *out_p0, Vector3
 
 				Vector3f centroid = sum / n; // calculate centroid
 
-				float xx = 0.0f, xy = 0.0f, xz = 0.0f, yy = 0.0f, yz = 0.0f, zz = 0.0f;
+				Eigen::MatrixXf M(points_agree.size(), 3);
 
-				for (std::vector<Point32>::iterator iter = points_agree.begin();
-					iter != points_agree.end(); iter++)
-				{
-					Vector3f r = Vector3f(iter->x, iter->y, iter->z) - ( centroid * 
-						Eigen::VectorXf::Ones(3) ); // calculate point offset from centroid
-					
-					xx += r.x() * r.x(); // populate covariances
-					xy += r.x() * r.y();
-					xz += r.x() * r.z();
-					yy += r.y() * r.y();
-					yz += r.y() * r.z();
-					zz += r.z() * r.z();
+				for (size_t row = 0; row < points_agree.size(); row++)
+				{ // build distance vector matrix
+					Vector3f point(points_agree[row].x, 
+									points_agree[row].y,
+									points_agree[row].z);
+
+					for (size_t col = 0; col < 3; col ++)
+					{
+						M(row, col) = point(col) - centroid(col);
+					}
 				}
 
-				float det_x = yy * zz - yz * yz; // calculate determinants
-				float det_y = xx * zz - xz * xz;
-				float det_z = xx * yy - xy * xy;
+				Matrix3f covariance_matrix = M.transpose().cross(M);
 
-				float det_max = std::max(det_x, std::max(det_y, det_z));
+				Eigen::EigenSolver<Matrix3f> eigen_solver;
+				eigen_solver.compute(covariance_matrix);
 
-				Vector3f all_fitted_n_hat;
+				Vector3f eigen_values = eigen_solver.eigenvalues().real();
 
-				if (det_max == det_x) // account for "bad conditioning"
-				{
-					all_fitted_n_hat = Vector3f(det_x, 
-												xz * yz - xy * zz,
-												xy * yz - xz * yy);
-				} else if (det_max == det_y)
-				{
-					all_fitted_n_hat = Vector3f(xz * yz - xy * zz,
-												det_y,
-												xy * xz - yz * xx);
-				} else
-				{
-					all_fitted_n_hat = Vector3f(xy * yz - xz * yy,
-												xy * xz - yz * xx,
-												det_z);
-				}
+				Matrix3f eigen_vectors = eigen_solver.eigenvectors().real();
 
-				all_fitted_n_hat = all_fitted_n_hat / all_fitted_n_hat.norm(); // normalize normal
+				// find eigenvalue that is closest to 0
+
+				size_t idx;
+
+				// find minimum eigenvalue, get index
+				float closest_eval = eigen_values.cwiseAbs().minCoeff(&idx);
+
+				// find corresponding eigenvector
+				Vector3f closest_evec = eigen_vectors.col(idx);
+
+				std::stringstream logstr;
+				logstr << "Closest eigenvalue : " << closest_eval << 
+					"Corresponding eigenvector : " << closest_evec <<
+					"Centroid : " << centroid;
+
+				ROS_DEBUG("run_RANSAC(): %s", logstr.str().c_str());
+
+				Vector3f all_fitted_n_hat = closest_evec / closest_evec.norm();
 
 				*out_n = all_fitted_n_hat;
 				*out_p0 = centroid;
 
 				return true;
 			}
-		} // end points loop 
+		
 	} // end iterations loop
 
 	return false;
