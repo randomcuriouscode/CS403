@@ -145,7 +145,7 @@ bool FitBestPlaneCallback(compsci403_assignment3::FitBestPlaneSrv::Request &req,
 
 		Vector3f n_hat; // keep track of the current plane model
 		Vector3f P0;
-		std::vector<Point32> might_agree; // list of points that agree with model within 
+		std::vector<Point32> points_agree; // list of points that agree with model within 
 
 		bool found = false;
 
@@ -164,7 +164,7 @@ bool FitBestPlaneCallback(compsci403_assignment3::FitBestPlaneSrv::Request &req,
 					p3.y - p1.y,
 					p3.z - p1.z); //Vector P1P3
 
-			if (v1.dot(v2) != 0) // dot product != 0 means we've found 3 nonlinear points
+			if (std::abs(v1.dot(v2)) != 1) // dot product != 1 means we've found 3 nonlinear points
 			{
 				found = true;
 				break; 
@@ -181,8 +181,28 @@ bool FitBestPlaneCallback(compsci403_assignment3::FitBestPlaneSrv::Request &req,
 		// fit a plane to p1, p2, p3
 
 		Vector3f n = v1.cross(v2); // calculate normal of plane
+		n_hat = n / n.norm();
+		P0 = Vector3f(p1.x, p1.y, p1.z);
 
+		for (std::vector<Point32>::iterator it = all_points.begin(); 
+		 it != all_points.end(); it++)
+		{
+		Vector3f M  (it->x - P0.x(),
+					 it->y - P0.y(),
+					 it->z - P0.z()); // M = (P - P0)
 
+		float d = M.dot(n);  // calculate distance
+
+		if (d <= RANSAC_THRESHOLD)
+		{   // add to inlier points list
+			points_agree.push_back(*it); 
+		}
+
+		if (points_agree.size() / all_points.size() > RANSAC_ESTIMATED_FIT_POINTS)
+		{
+			// fit to m points
+		}
+	} 
 
 
 	}
