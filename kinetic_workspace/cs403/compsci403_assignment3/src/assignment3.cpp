@@ -169,7 +169,7 @@ bool FitBestPlaneCallback(compsci403_assignment3::FitBestPlaneSrv::Request &req,
 				found = true;
 				break; 
 			}
-		}
+		} // end try random element loop
 		if (!found) // could not find 3 random nonlinear points in 100 tries, go to next iteration
 		{
 			ROS_ERROR("FitBestPlaneCallback(): Could not find 3 random nonlinear points in %ld tries, going on to iteration %ld", RANDOM_MAX_TRIES, iterations + 1);
@@ -182,30 +182,86 @@ bool FitBestPlaneCallback(compsci403_assignment3::FitBestPlaneSrv::Request &req,
 
 		Vector3f n = v1.cross(v2); // calculate normal of plane
 		n_hat = n / n.norm();
-		P0 = Vector3f(p1.x, p1.y, p1.z);
+		P0 = Vector3f(p1.x, p1.y, p1.z); 
+
+		// at some point, the original p0, p1, p2 will be iterated over and added to agreed points
 
 		for (std::vector<Point32>::iterator it = all_points.begin(); 
 		 it != all_points.end(); it++)
 		{
-		Vector3f M  (it->x - P0.x(),
-					 it->y - P0.y(),
-					 it->z - P0.z()); // M = (P - P0)
+			Vector3f M  (it->x - P0.x(),
+						 it->y - P0.y(),
+						 it->z - P0.z()); // M = (P - P0)
 
-		float d = M.dot(n);  // calculate distance
+			float d = M.dot(n);  // calculate distance
 
-		if (d <= RANSAC_THRESHOLD)
-		{   // add to inlier points list
-			points_agree.push_back(*it); 
-		}
+			if (d <= RANSAC_THRESHOLD)
+			{   // add to inlier points list
+				points_agree.push_back(*it); 
+			}
 
-		if (points_agree.size() / all_points.size() > RANSAC_ESTIMATED_FIT_POINTS)
-		{
-			// fit to m points
-		}
-	} 
+			if (points_agree.size() / all_points.size() > RANSAC_ESTIMATED_FIT_POINTS)
+			{
+				// fit to points_agree.size() points
 
+				size_t n = points_agree.size();
 
-	}
+				Vector3f sum(0.0f, 0.0f, 0.0f);
+
+				for (std::vector<Point32>::iterator iter = points_agree.begin();
+					iter != points_agree.end(); iter++)
+				{
+					sum += Vector3f(iter->x, iter->y, iter->z);
+				}
+
+				Vector3f centroid = sum / n; // calculate centroid
+
+				float xx = 0.0f, xy = 0.0f, xz = 0.0f, yy = 0.0f, yz = 0.0f, zz = 0.0f;
+
+				for (std::vector<Point32>::iterator iter = points_agree.begin();
+					iter != points_agree.end(); iter++)
+				{
+					Vector3f r = Vector3f(iter->x, iter->y, iter->z) - ( centroid * 
+						Eigen::VectorXf::Ones(3) ); // calculate point offset from centroid
+					
+					xx += r.x() * r.x(); // populate covariances
+					xy += r.x() * r.y();
+					xz += r.x() * r.z();
+					yy += r.y() * r.y();
+					yz += r.y() * r.z();
+					zz += r.z() * r.z();
+				}
+
+				float det_x = yy * zz - yz * yz; // calculate determinants
+				float det_y = xx * zz - xz * xz;
+				float det_z = xx * yy - xy * xy;
+
+				float det_max = std::max(det_x, std::max(det_y, det_z));
+
+				Vector3f all_fitted_n_hat;
+
+				if (det_max == det_x) // account for "bad conditioning"
+				{
+					all_fitted_n_hat = Vector3f(det_x, 
+												xz * yz - xy * zz,
+												xy * yz - xz * yy);
+				} else if (det_max == det_y)
+				{
+					all_fitted_n_hat = Vector3f(xz * yz - xy * zz,
+												det_y,
+												xy * xz - yz * xx);
+				} else
+				{
+					all_fitted_n_hat = Vector3f(xy * yz - xz * yy,
+												xy * xz - yz * xx,
+												det_z);
+				}
+
+				all_fitted_n_hat = all_fitted_n_hat / all_fitted_n_hat.norm(); // normalize normal
+				
+			}
+		} // end points loop 
+	} // end iterations loop
 	return false;
 }
 
