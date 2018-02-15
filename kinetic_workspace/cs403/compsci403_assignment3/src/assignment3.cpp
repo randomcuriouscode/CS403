@@ -131,12 +131,8 @@ I random_element(I begin, I end)
     return begin;
 }
 
-bool FitBestPlaneCallback(compsci403_assignment3::FitBestPlaneSrv::Request &req,
-						  compsci403_assignment3::FitBestPlaneSrv::Response &res)
+bool run_RANSAC(const std::vector<Point32> all_points, Vector3f *out_p0, Vector3f *out_n)
 {
-	std::vector<Point32> all_points = req.P;
-
-
 	for (size_t iterations = 0; iterations < RANSAC_MAX_ITER; iterations ++)
 	{
 		Point32 p1,p2,p3;
@@ -172,7 +168,7 @@ bool FitBestPlaneCallback(compsci403_assignment3::FitBestPlaneSrv::Request &req,
 		} // end try random element loop
 		if (!found) // could not find 3 random nonlinear points in 100 tries, go to next iteration
 		{
-			ROS_ERROR("FitBestPlaneCallback(): Could not find 3 random nonlinear points in %ld tries, going on to iteration %ld", RANDOM_MAX_TRIES, iterations + 1);
+			ROS_ERROR("run_RANSAC(): Could not find 3 random nonlinear points in %ld tries, going on to iteration %ld", RANDOM_MAX_TRIES, iterations + 1);
 			continue;
 		}
 
@@ -201,7 +197,7 @@ bool FitBestPlaneCallback(compsci403_assignment3::FitBestPlaneSrv::Request &req,
 			}
 
 			if (points_agree.size() / all_points.size() > RANSAC_ESTIMATED_FIT_POINTS)
-			{
+			{	// if points agree / total points > estimated % points fitting
 				// fit to points_agree.size() points
 
 				size_t n = points_agree.size();
@@ -258,11 +254,41 @@ bool FitBestPlaneCallback(compsci403_assignment3::FitBestPlaneSrv::Request &req,
 				}
 
 				all_fitted_n_hat = all_fitted_n_hat / all_fitted_n_hat.norm(); // normalize normal
-				
+
+				*out_n = all_fitted_n_hat;
+				*out_p0 = centroid;
+
+				return true;
 			}
 		} // end points loop 
 	} // end iterations loop
+
 	return false;
+}
+
+bool FitBestPlaneCallback(compsci403_assignment3::FitBestPlaneSrv::Request &req,
+						  compsci403_assignment3::FitBestPlaneSrv::Response &res)
+{
+	std::vector<Point32> all_points = req.P;
+
+	Vector3f fitted_n_hat;
+	Vector3f fitted_p0;
+
+	if(!run_RANSAC(all_points, &fitted_n_hat, &fitted_p0))
+	{
+		ROS_ERROR("FitBestPlaneCallback(): Something went wrong with RANSAC");
+		return false;
+	}
+
+	res.P0.x = fitted_p0.x();
+	res.P0.y = fitted_p0.y();
+	res.P0.z = fitted_p0.z();
+
+	res.n.x = fitted_n_hat.x();
+	res.n.y = fitted_p0.y();
+	res.n.z = fitted_p0.z();
+
+	return true;
 }
 
 int main(int argc, char **argv) {
