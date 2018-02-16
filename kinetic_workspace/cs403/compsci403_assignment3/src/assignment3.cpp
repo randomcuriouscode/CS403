@@ -354,7 +354,7 @@ int main(int argc, char **argv) {
   g_FitBestPlaneSrv = n.advertiseService("/COMPSCI403/FitBestPlane", FitBestPlaneCallback);
 
   //5. Publisher to /COMPSCI403/FilteredPointCloud
-  g_FilteredPointCloudPub = n.advertise<compsci403_assignment3::PlaneParametersMsg>("/COMPSCI403/FilteredPointCloud", 1000);
+  g_FilteredPointCloudPub = n.advertise<sensor_msgs::PointCloud>("/COMPSCI403/FilteredPointCloud", 1000);
 
   //5. Publisher to /COMPSCI403/PlaneParameters
   g_PlaneParametersPub = n.advertise<compsci403_assignment3::PlaneParametersMsg>("/COMPSCI403/PlaneParameters", 1000);
