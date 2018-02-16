@@ -362,6 +362,7 @@ int main(int argc, char **argv) {
   //5. Subscriber to /COMPSCI403/PointCloud
   g_PointCloudSub = n.subscribe("/COMPSCI403/PointCloud", 1000, PointCloudCallback);
 
+  ROS_INFO("All globals initialized, spinning...");
 
   ros::spin();
 
