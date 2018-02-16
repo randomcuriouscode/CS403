@@ -28,6 +28,11 @@ ros::ServiceServer g_FitMinimalPlaneSrv; // /COMPSCI403/FitMinimalPlane
 ros::ServiceServer g_FindInliersSrv; // /COMPSCI403/FindInliers
 ros::ServiceServer g_FitBestPlaneSrv; // /COMPSCI403/FitBestPlane
 
+ros::Subscriber g_PointCloudSub; // /COMPSCI403/PointCloud
+
+ros::Publisher g_FilteredPointCloudPub; // /COMPSCI403/FilteredPointCloud
+ros::Publisher g_PlaneParametersPub; // /COMPSCI403/PlaneParameters
+
 const float RANSAC_ESTIMATED_FIT_POINTS = .75f; // % points estimated to fit the model
 const size_t RANSAC_MAX_ITER = 40; // max RANSAC iterations
 const size_t RANDOM_MAX_TRIES = 100; // max RANSAC random point tries per iteration
@@ -131,7 +136,9 @@ I random_element(I begin, I end)
     return begin;
 }
 
-bool run_RANSAC(const std::vector<Point32> all_points, Vector3f *out_p0, Vector3f *out_n)
+bool run_RANSAC(const std::vector<Point32> all_points, 
+	Vector3f *out_p0, Vector3f *out_n,
+	 std::vector<Point32> *out_inlier_points)
 {
 	for (size_t iterations = 0; iterations < RANSAC_MAX_ITER; iterations ++)
 	{
@@ -160,7 +167,7 @@ bool run_RANSAC(const std::vector<Point32> all_points, Vector3f *out_p0, Vector3
 					p3.y - p1.y,
 					p3.z - p1.z); //Vector P1P3
 
-			if (std::abs(v1.dot(v2)) != 1) // dot product != 1 means we've found 3 nonlinear points
+			if (std::abs(v1.dot(v2)) != 1.f) // dot product != 1 means we've found 3 nonlinear points
 			{
 				found = true;
 				break; 
@@ -182,6 +189,7 @@ bool run_RANSAC(const std::vector<Point32> all_points, Vector3f *out_p0, Vector3
 
 		// at some point, the original p0, p1, p2 will be iterated over and added to agreed points
 
+		// loop over all points, find points that are inliers to plane
 		for (std::vector<Point32>::const_iterator it = all_points.begin(); 
 		 it != all_points.end(); it++)
 		{
@@ -227,7 +235,7 @@ bool run_RANSAC(const std::vector<Point32> all_points, Vector3f *out_p0, Vector3
 					}
 				}
 
-				Matrix3f covariance_matrix = M.transpose().cross(M);
+				Matrix3f covariance_matrix = M.transpose() * M;
 
 				Eigen::EigenSolver<Matrix3f> eigen_solver;
 				eigen_solver.compute(covariance_matrix);
@@ -255,14 +263,14 @@ bool run_RANSAC(const std::vector<Point32> all_points, Vector3f *out_p0, Vector3
 
 				Vector3f all_fitted_n_hat = closest_evec / closest_evec.norm();
 
-				*out_n = all_fitted_n_hat;
-				*out_p0 = centroid;
+				// invoke copy constructors for outbound 
+				*out_n = Vector3f(all_fitted_n_hat);
+				*out_p0 = Vector3f(centroid); 
+				*out_inlier_points = std::vector<Point32>(points_agree);
 
 				return true;
 			}
-		
 	} // end iterations loop
-
 	return false;
 }
 
@@ -274,7 +282,9 @@ bool FitBestPlaneCallback(compsci403_assignment3::FitBestPlaneSrv::Request &req,
 	Vector3f fitted_n_hat;
 	Vector3f fitted_p0;
 
-	if(!run_RANSAC(all_points, &fitted_n_hat, &fitted_p0))
+	std::vector<Point32> inlier_points;
+
+	if(!run_RANSAC(all_points, &fitted_p0, &fitted_n_hat, &inlier_points))
 	{
 		ROS_ERROR("FitBestPlaneCallback(): Something went wrong with RANSAC");
 		return false;
@@ -285,11 +295,45 @@ bool FitBestPlaneCallback(compsci403_assignment3::FitBestPlaneSrv::Request &req,
 	res.P0.z = fitted_p0.z();
 
 	res.n.x = fitted_n_hat.x();
-	res.n.y = fitted_p0.y();
-	res.n.z = fitted_p0.z();
+	res.n.y = fitted_n_hat.y();
+	res.n.z = fitted_n_hat.z();
 
 	return true;
 }
+
+void PointCloudCallback(const sensor_msgs::PointCloud &pc)
+{
+	Vector3f fitted_n_hat;
+	Vector3f fitted_p0;
+	std::vector<Point32> inlier_points;
+
+	if (!run_RANSAC(pc.points, &fitted_p0, &fitted_n_hat, &inlier_points))
+	{
+		ROS_ERROR("PointCloudCallback(): RANSAC failed to fit the plane, nothing to publish");
+		return;
+	}
+
+	// construct filtered pointcloud msg
+	sensor_msgs::PointCloud filtered_pc;
+	filtered_pc.header = pc.header;
+	filtered_pc.points = inlier_points;
+
+	g_FilteredPointCloudPub.publish(filtered_pc); //publish filtered
+
+	// construct plane parameters msg
+	compsci403_assignment3::PlaneParametersMsg plane_params;
+	plane_params.n.x = fitted_n_hat.x();
+	plane_params.n.y = fitted_n_hat.y();
+	plane_params.n.z = fitted_n_hat.z();
+
+	plane_params.P0.x = fitted_p0.x();
+	plane_params.P0.y = fitted_p0.y();
+	plane_params.P0.z = fitted_p0.z();
+
+	g_PlaneParametersPub.publish(plane_params); // publish plane params
+}
+
+
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "assignment3");
@@ -308,6 +352,16 @@ int main(int argc, char **argv) {
 
   //4. Provide /COMPSCI403/FitBestPlane
   g_FitBestPlaneSrv = n.advertiseService("/COMPSCI403/FitBestPlane", FitBestPlaneCallback);
+
+  //5. Publisher to /COMPSCI403/FilteredPointCloud
+  g_FilteredPointCloudPub = n.advertise<compsci403_assignment3::PlaneParametersMsg>("/COMPSCI403/FilteredPointCloud", 1000);
+
+  //5. Publisher to /COMPSCI403/PlaneParameters
+  g_PlaneParametersPub = n.advertise<compsci403_assignment3::PlaneParametersMsg>("/COMPSCI403/PlaneParameters", 1000);
+
+  //5. Subscriber to /COMPSCI403/PointCloud
+  g_PointCloudSub = n.subscribe("/COMPSCI403/PointCloud", 1000, PointCloudCallback);
+
 
   ros::spin();
 
