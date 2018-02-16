@@ -15,6 +15,12 @@
 #include "compsci403_assignment3/FitBestPlaneSrv.h"
 #include "compsci403_assignment3/PlaneParametersMsg.h"
 
+#include <ros/console.h>
+
+#define DEBUG
+
+
+
 // Include any additional header or service/message files
 
 using Eigen::Matrix3f;
@@ -33,10 +39,10 @@ ros::Subscriber g_PointCloudSub; // /COMPSCI403/PointCloud
 ros::Publisher g_FilteredPointCloudPub; // /COMPSCI403/FilteredPointCloud
 ros::Publisher g_PlaneParametersPub; // /COMPSCI403/PlaneParameters
 
-const float RANSAC_ESTIMATED_FIT_POINTS = .75f; // % points estimated to fit the model
-const size_t RANSAC_MAX_ITER = 40; // max RANSAC iterations
+const float RANSAC_ESTIMATED_FIT_POINTS = .80f; // % points estimated to fit the model
+const size_t RANSAC_MAX_ITER = 100; // max RANSAC iterations
 const size_t RANDOM_MAX_TRIES = 100; // max RANSAC random point tries per iteration
-const float RANSAC_THRESHOLD = .5f; // threshold to determine what constitutes a close point to a plane
+const float RANSAC_THRESHOLD = 0.00000000000001f; // threshold to determine what constitutes a close point to a plane
 
 // Define service and callback functions
 
@@ -101,6 +107,7 @@ bool FindInliersCallback(compsci403_assignment3::FindInliersSrv::Request &req,
 						compsci403_assignment3::FindInliersSrv::Response &res)
 {
 	Vector3f n (req.n.x, req.n.y, req.n.z);
+	// n will already be normalized in the request.
 
 	for (std::vector<Point32>::iterator it = req.P.begin(); 
 		 it != req.P.end(); it++)
@@ -108,6 +115,8 @@ bool FindInliersCallback(compsci403_assignment3::FindInliersSrv::Request &req,
 		Vector3f M  (it->x - req.P0.x,
 					 it->y - req.P0.y,
 					 it->z - req.P0.z); // M = (P - P0)
+
+
 
 		float d = M.dot(n);  // calculate distance
 
@@ -127,7 +136,7 @@ template <typename I>
 I random_element(I begin, I end)
 {
     const unsigned long n = std::distance(begin, end);
-    const unsigned long divisor = (RAND_MAX + 1) / n;
+    const unsigned long divisor = ((long)RAND_MAX + 1) / n;
 
     unsigned long k;
     do { k = std::rand() / divisor; } while (k >= n);
@@ -197,7 +206,7 @@ bool run_RANSAC(const std::vector<Point32> all_points,
 						 it->y - P0.y(),
 						 it->z - P0.z()); // M = (P - P0)
 
-			float d = M.dot(n);  // calculate distance
+			float d = M.dot(n_hat);  // calculate distance
 
 			if (d <= RANSAC_THRESHOLD)
 			{   // add to inlier points list
@@ -205,7 +214,9 @@ bool run_RANSAC(const std::vector<Point32> all_points,
 			}
 		} // end points loop 
 
-		if (points_agree.size() / all_points.size() > RANSAC_ESTIMATED_FIT_POINTS)
+		ROS_DEBUG("run_RANSAC() POINTS AGREED: %li=%f, RANSAC_ESTIMATED_FIT_POINTS: %f", points_agree.size(), 
+				(float) points_agree.size() / all_points.size(), RANSAC_ESTIMATED_FIT_POINTS);
+		if (((float) points_agree.size()) / all_points.size() > RANSAC_ESTIMATED_FIT_POINTS)
 			{	// if points agree / total points > estimated % points fitting
 				// fit to points_agree.size() points
 
@@ -255,9 +266,9 @@ bool run_RANSAC(const std::vector<Point32> all_points,
 				Vector3f closest_evec = eigen_vectors.col(idx);
 
 				std::stringstream logstr;
-				logstr << "Closest eigenvalue : " << closest_eval << 
-					"Corresponding eigenvector : " << closest_evec <<
-					"Centroid : " << centroid;
+				logstr << "Closest eigenvalue : " << closest_eval << std::endl <<
+					"Corresponding eigenvector : " << std::endl << closest_evec << std::endl <<
+					"Centroid : " << std::endl << centroid;
 
 				ROS_DEBUG("run_RANSAC(): %s", logstr.str().c_str());
 
@@ -267,6 +278,9 @@ bool run_RANSAC(const std::vector<Point32> all_points,
 				*out_n = Vector3f(all_fitted_n_hat);
 				*out_p0 = Vector3f(centroid); 
 				*out_inlier_points = std::vector<Point32>(points_agree);
+
+				ROS_INFO("run_RANSAC():: Success, total_size: %li, inlier_size: %li, %% agreement %f", 
+					all_points.size(), out_inlier_points->size(), (float) out_inlier_points->size() / all_points.size());
 
 				return true;
 			}
@@ -361,6 +375,12 @@ int main(int argc, char **argv) {
 
   //5. Subscriber to /COMPSCI403/PointCloud
   g_PointCloudSub = n.subscribe("/COMPSCI403/PointCloud", 1000, PointCloudCallback);
+
+#ifdef DEBUG
+	if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) ) {
+	   ros::console::notifyLoggerLevelsChanged();
+	}
+#endif
 
   ROS_INFO("All globals initialized, spinning...");
 
