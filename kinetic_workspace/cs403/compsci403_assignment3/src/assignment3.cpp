@@ -8,6 +8,7 @@
 #include <eigen3/Eigen/Eigenvalues>
 #include <geometry_msgs/Point32.h>
 #include <sensor_msgs/PointCloud.h>
+#include <sensor_msgs/Image.h>
 
 #include "compsci403_assignment3/TransformPointSrv.h"
 #include "compsci403_assignment3/FitMinimalPlaneSrv.h"
@@ -35,6 +36,7 @@ ros::ServiceServer g_FindInliersSrv; // /COMPSCI403/FindInliers
 ros::ServiceServer g_FitBestPlaneSrv; // /COMPSCI403/FitBestPlane
 
 ros::Subscriber g_PointCloudSub; // /COMPSCI403/PointCloud
+ros::Subscriber g_DepthImageSub; // Subscriber COMPSCI403/DepthImage
 
 ros::Publisher g_FilteredPointCloudPub; // /COMPSCI403/FilteredPointCloud
 ros::Publisher g_PlaneParametersPub; // /COMPSCI403/PlaneParameters
@@ -43,6 +45,9 @@ const float RANSAC_ESTIMATED_FIT_POINTS = .80f; // % points estimated to fit the
 const size_t RANSAC_MAX_ITER = 500; // max RANSAC iterations
 const size_t RANDOM_MAX_TRIES = 100; // max RANSAC random point tries per iteration
 const float RANSAC_THRESHOLD = 0.0000001f; // threshold to determine what constitutes a close point to a plane
+
+const float g_fx = 588.446f, g_fy = -564.227f, g_px = 320.0f, 
+            g_py = 240.0f, g_a = 3.008f, g_b = -0.002745f;
 
 // Define service and callback functions
 
@@ -347,7 +352,81 @@ void PointCloudCallback(const sensor_msgs::PointCloud &pc)
 	g_PlaneParametersPub.publish(plane_params); // publish plane params
 }
 
+void DepthImageCallback(const sensor_msgs::Image& image) {
+  const int image_width = image.width;
+  const int image_height = image.height;
 
+  sensor_msgs::PointCloud pc; // create pointcloud
+  pc.header = image.header;
+
+  for (int y = 0; y < image_height; ++y) {
+    for (int x = 0; x < image_width; ++x) {
+      uint16_t byte0 = image.data[2 * (x + y * image_width) + 0];
+      uint16_t byte1 = image.data[2 * (x + y * image_width) + 1];
+      if (!image.is_bigendian) {
+        std::swap(byte0, byte1);
+      }
+      // Combine the two bytes to form a 16 bit value, and disregard the
+      // most significant 4 bits to extract the lowest 11 bits.
+      const uint16_t raw_depth = ((byte0 << 8) | byte1) & 0x7FF; // raw depth disparity
+
+      // Reconstruct 3D point from x, y, raw_depth, and sensor intrinsics
+
+      float denom = (g_a + (g_b * (float)raw_depth));
+
+      ROS_DEBUG("DepthImageCallback(): disparity: %i, a: %f, b:%f, denom: %f", 
+                  raw_depth, g_a, g_b , denom);
+
+      if (denom == 0)
+      {
+        ROS_ERROR("DepthImageCallback(): divide by zero denominator");
+      }
+
+      float depth = 1 / denom; // calculate depth from kinect formula
+
+      float XZ_ratio = (x - g_px) / g_fx; // gives X/Z
+      float YZ_ratio = (y - g_py) / g_fy; // gives Y/Z
+
+      geometry_msgs::Point32 p; // create point
+      p.x = XZ_ratio * depth;
+      p.y = YZ_ratio * depth;
+      p.z = depth;
+
+      ROS_DEBUG("X: %f, Y: %f, Z: %f", p.x, p.y, p.z);
+
+      pc.points.push_back(p); // add to point cloud points vector
+    }
+  }
+
+  	Vector3f fitted_n_hat;
+	Vector3f fitted_p0;
+	std::vector<Point32> inlier_points;
+
+	if (!run_RANSAC(pc.points, &fitted_p0, &fitted_n_hat, &inlier_points))
+	{
+		ROS_ERROR("DepthImageCallback(): RANSAC failed to fit the plane, nothing to publish");
+		return;
+	}
+
+	// construct filtered pointcloud msg
+	sensor_msgs::PointCloud filtered_pc;
+	filtered_pc.header = pc.header;
+	filtered_pc.points = inlier_points;
+
+	g_FilteredPointCloudPub.publish(filtered_pc); //publish filtered
+
+	// construct plane parameters msg
+	compsci403_assignment3::PlaneParametersMsg plane_params;
+	plane_params.n.x = fitted_n_hat.x();
+	plane_params.n.y = fitted_n_hat.y();
+	plane_params.n.z = fitted_n_hat.z();
+
+	plane_params.P0.x = fitted_p0.x();
+	plane_params.P0.y = fitted_p0.y();
+	plane_params.P0.z = fitted_p0.z();
+
+	g_PlaneParametersPub.publish(plane_params); // publish plane params
+}
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "assignment3");
@@ -375,6 +454,10 @@ int main(int argc, char **argv) {
 
   //5. Subscriber to /COMPSCI403/PointCloud
   g_PointCloudSub = n.subscribe("/COMPSCI403/PointCloud", 1000, PointCloudCallback);
+
+  //6. Subscribe to /COMPSCI403/DepthImage
+  g_DepthImageSub = n.subscribe("/COMPSCI403/DepthImage", 1000, DepthImageCallback);
+
 
 #ifdef DEBUG
 	if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) ) {
