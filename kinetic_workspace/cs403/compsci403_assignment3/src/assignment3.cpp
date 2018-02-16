@@ -17,7 +17,7 @@
 
 #include <ros/console.h>
 
-#define DEBUG
+//#define DEBUG
 
 
 
@@ -40,9 +40,9 @@ ros::Publisher g_FilteredPointCloudPub; // /COMPSCI403/FilteredPointCloud
 ros::Publisher g_PlaneParametersPub; // /COMPSCI403/PlaneParameters
 
 const float RANSAC_ESTIMATED_FIT_POINTS = .80f; // % points estimated to fit the model
-const size_t RANSAC_MAX_ITER = 100; // max RANSAC iterations
+const size_t RANSAC_MAX_ITER = 500; // max RANSAC iterations
 const size_t RANDOM_MAX_TRIES = 100; // max RANSAC random point tries per iteration
-const float RANSAC_THRESHOLD = 0.00000000000001f; // threshold to determine what constitutes a close point to a plane
+const float RANSAC_THRESHOLD = 0.0000001f; // threshold to determine what constitutes a close point to a plane
 
 // Define service and callback functions
 
@@ -279,7 +279,7 @@ bool run_RANSAC(const std::vector<Point32> all_points,
 				*out_p0 = Vector3f(centroid); 
 				*out_inlier_points = std::vector<Point32>(points_agree);
 
-				ROS_INFO("run_RANSAC():: Success, total_size: %li, inlier_size: %li, %% agreement %f", 
+				ROS_DEBUG("run_RANSAC():: Success, total_size: %li, inlier_size: %li, %% agreement %f", 
 					all_points.size(), out_inlier_points->size(), (float) out_inlier_points->size() / all_points.size());
 
 				return true;
