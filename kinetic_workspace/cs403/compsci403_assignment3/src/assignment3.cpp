@@ -154,6 +154,11 @@ bool run_RANSAC(const std::vector<Point32> all_points,
 	Vector3f *out_p0, Vector3f *out_n,
 	 std::vector<Point32> *out_inlier_points)
 {
+	float bestfit_eval = std::numeric_limits<float>::max();
+	Vector3f bestfit_p0;
+	Vector3f bestfit_n;
+	std::vector<Point32> bestfit_points;
+
 	for (size_t iterations = 0; iterations < RANSAC_MAX_ITER; iterations ++)
 	{
 		Point32 p1,p2,p3;
@@ -273,23 +278,47 @@ bool run_RANSAC(const std::vector<Point32> all_points,
 				std::stringstream logstr;
 				logstr << "Closest eigenvalue : " << closest_eval << std::endl <<
 					"Corresponding eigenvector : " << std::endl << closest_evec << std::endl <<
-					"Centroid : " << std::endl << centroid;
+					"Centroid : " << std::endl << centroid << "Best fit eval: " <<
+					bestfit_eval << std::endl;
 
 				ROS_DEBUG("run_RANSAC(): %s", logstr.str().c_str());
 
 				Vector3f all_fitted_n_hat = closest_evec / closest_evec.norm();
 
-				// invoke copy constructors for outbound 
-				*out_n = Vector3f(all_fitted_n_hat);
-				*out_p0 = Vector3f(centroid); 
-				*out_inlier_points = std::vector<Point32>(points_agree);
-
-				ROS_DEBUG("run_RANSAC():: Success, total_size: %li, inlier_size: %li, %% agreement %f", 
-					all_points.size(), out_inlier_points->size(), (float) out_inlier_points->size() / all_points.size());
-
-				return true;
+				if (closest_eval < bestfit_eval)
+				{
+					bestfit_eval = closest_eval;
+					bestfit_p0 = centroid;
+					bestfit_n = all_fitted_n_hat;
+					bestfit_points = points_agree;
+					ROS_DEBUG("run_RANSAC(): current fit eval %f less than best fit eval %f. Refining best fit model to current model. Iteration %ld", 
+						closest_eval, bestfit_eval, iterations);
+				}
 			}
 	} // end iterations loop
+
+	if (bestfit_points.size())
+	{
+		// invoke copy constructors for outbound 
+		*out_n = Vector3f(bestfit_n);
+		*out_p0 = Vector3f(bestfit_p0); 
+		*out_inlier_points = std::vector<Point32>(bestfit_points);
+
+		ROS_DEBUG("run_RANSAC()::True, total_size: %li, inlier_size: %li, %% agreement %f, eigenvalue error: %f", 
+					all_points.size(), out_inlier_points->size(),
+					 (float) out_inlier_points->size() / all_points.size(),
+					 bestfit_eval);
+
+		return true;
+
+	}
+	else
+	{
+		ROS_DEBUG("run_RANSAC()::False, no fitting plane could be extracted in %ld iterations", 
+					RANSAC_MAX_ITER);
+		return false;
+	}
+
 	return false;
 }
 
