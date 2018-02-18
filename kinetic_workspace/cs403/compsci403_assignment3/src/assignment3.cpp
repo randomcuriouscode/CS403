@@ -42,9 +42,9 @@ ros::Publisher g_FilteredPointCloudPub; // /COMPSCI403/FilteredPointCloud
 ros::Publisher g_PlaneParametersPub; // /COMPSCI403/PlaneParameters
 
 const float RANSAC_ESTIMATED_FIT_POINTS = .80f; // % points estimated to fit the model
-const size_t RANSAC_MAX_ITER = 40; // max RANSAC iterations
+const size_t RANSAC_MAX_ITER = 500; // max RANSAC iterations
 const size_t RANDOM_MAX_TRIES = 100; // max RANSAC random point tries per iteration
-const float RANSAC_THRESHOLD = 0.001f; // threshold to determine what constitutes a close point to a plane
+const float RANSAC_THRESHOLD = 0.0000001f; // threshold to determine what constitutes a close point to a plane
 
 const float g_fx = 588.446f, g_fy = -564.227f, g_px = 320.0f, 
             g_py = 240.0f, g_a = 3.008f, g_b = -0.002745f;
@@ -314,7 +314,7 @@ bool run_RANSAC(const std::vector<Point32> all_points,
 	}
 	else
 	{
-		ROS_ERROR("run_RANSAC()::False, no fitting plane could be extracted in %ld iterations", 
+		ROS_DEBUG("run_RANSAC()::False, no fitting plane could be extracted in %ld iterations", 
 					RANSAC_MAX_ITER);
 		return false;
 	}
