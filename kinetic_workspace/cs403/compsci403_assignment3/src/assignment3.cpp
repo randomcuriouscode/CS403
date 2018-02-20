@@ -3,6 +3,7 @@
 #include <ros/ros.h>
 #include <std_msgs/String.h>
 #include <sstream>
+#include <cstdlib>
 
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Eigenvalues>
@@ -41,10 +42,10 @@ ros::Subscriber g_DepthImageSub; // Subscriber COMPSCI403/DepthImage
 ros::Publisher g_FilteredPointCloudPub; // /COMPSCI403/FilteredPointCloud
 ros::Publisher g_PlaneParametersPub; // /COMPSCI403/PlaneParameters
 
-const float RANSAC_ESTIMATED_FIT_POINTS = .80f; // % points estimated to fit the model
-const size_t RANSAC_MAX_ITER = 500; // max RANSAC iterations
+const float RANSAC_ESTIMATED_FIT_POINTS = .60f; // % points estimated to fit the model
+const size_t RANSAC_MAX_ITER = 40; // max RANSAC iterations
 const size_t RANDOM_MAX_TRIES = 100; // max RANSAC random point tries per iteration
-const float RANSAC_THRESHOLD = 0.0000001f; // threshold to determine what constitutes a close point to a plane
+float RANSAC_THRESHOLD = 0.045f; // threshold to determine what constitutes a close point to a plane
 
 const float g_fx = 588.446f, g_fy = -564.227f, g_px = 320.0f, 
             g_py = 240.0f, g_a = 3.008f, g_b = -0.002745f;
@@ -460,6 +461,12 @@ void DepthImageCallback(const sensor_msgs::Image& image) {
 int main(int argc, char **argv) {
   ros::init(argc, argv, "assignment3");
   ros::NodeHandle n;
+
+  if (argc > 1)
+  {
+  	RANSAC_THRESHOLD = strtof(argv[1], NULL);
+  	ROS_INFO("Set threshold to : %f", RANSAC_THRESHOLD);
+  }
 
   // Perform operations defined in Assignment 3
 
