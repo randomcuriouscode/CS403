@@ -45,7 +45,7 @@ ros::Publisher g_PlaneParametersPub; // /COMPSCI403/PlaneParameters
 const float RANSAC_ESTIMATED_FIT_POINTS = .60f; // % points estimated to fit the model
 const size_t RANSAC_MAX_ITER = 40; // max RANSAC iterations
 const size_t RANDOM_MAX_TRIES = 100; // max RANSAC random point tries per iteration
-float RANSAC_THRESHOLD = 0.045f; // threshold to determine what constitutes a close point to a plane
+float RANSAC_THRESHOLD = 0.03f; // threshold to determine what constitutes a close point to a plane
 
 const float g_fx = 588.446f, g_fy = -564.227f, g_px = 320.0f, 
             g_py = 240.0f, g_a = 3.008f, g_b = -0.002745f;
