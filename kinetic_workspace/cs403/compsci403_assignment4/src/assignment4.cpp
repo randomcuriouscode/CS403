@@ -48,6 +48,66 @@ using namespace std;
 namespace t_helpers
 {
 
+bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f);
+
+bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float w,
+					vector< pair<geometry_msgs::Point32, float> > &out_pointmap, 
+					pair<geometry_msgs::Point32, float> &out_closest)
+{
+	bool obstacle = false; // true if not obstacle free
+	float min_f = numeric_limits<float>::max(); // keep track of min free path len
+	geometry_msgs::Point32 closest_pt;
+
+	for (vector<geometry_msgs::Point32>::const_iterator it = pc.points.begin(); it != pc.points.end(); 
+				it++) // iterate over all converted points to find obstacle
+	{
+		float temp_f;
+		bool temp_obstacle = PointIsObstacle(Eigen::Vector2f(it->x, it->y), 
+																					v, w, &temp_f);
+		if (temp_obstacle) // found an obstacle
+		{
+			obstacle = true;
+
+			out_pointmap.push_back(pair<geometry_msgs::Point32, float>(*it, temp_f)); // push to output vector
+
+			if (temp_f < min_f) // obstacle is closer than current closest
+			{
+				ROS_DEBUG("GetFreePathCallback: Found an obstacle: %f, cur min: %f", temp_f, min_f);
+				closest_pt = *it;
+				min_f = temp_f;
+			}
+		}
+	}
+
+	if (obstacle) // at least one obstacle was found
+	{
+		ROS_DEBUG("GetFreePathCallback: At least 1 obstacle: %f", min_f);
+		out_closest.first = closest_pt;
+		out_closest.second = min_f;
+		return true;
+	}
+	else // no obstacles along the path
+	{
+		ROS_DEBUG("GetFreePathCallback: No obstacles found along path");
+		return false;
+	}
+}
+
+bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float w, float *out_f)
+{
+	vector< pair<geometry_msgs::Point32, float> > dont_care;
+	pair<geometry_msgs::Point32, float> closest_pt;
+
+	bool obstacle = ObstacleExist(pc, v, w, dont_care, closest_pt);
+
+	if (obstacle)
+	{
+		*out_f = closest_pt.second;
+	}
+
+	return obstacle;
+}
+
 /*
 	@param p 2x1 Vector input point
 	@param v velocity scalar
