@@ -47,18 +47,37 @@ bool CheckPointCallback (compsci403_assignment4::CheckPointSrv::Request &req,
 
 			return true; // free path and obstacle found with 0 velocity
 		}
+		else // not an obstacle
+		{
+			ROS_DEBUG("p.y: %f is greater than R_ROBOT: %f, not obstacle", p.y(), R_ROBOT);
+
+			res.is_obstacle = false;
+
+			return true;
+		}
 	}
 	else
 	{ // must deal with angular velocity
 
+
 		Eigen::Vector2f c (0, req.v / req.w);	// calculate center of rotation
 
-		float r = c.norm(); // radius of rotation is the L1 norm 
+		float r = c.norm(); // radius of rotation is the L1 norm of the center of rotation
+
+		float p_dist_from_robot = abs((c - p).norm() - r);
+
+		if (p_dist_from_robot < R_ROBOT) // obstacle
+		{
 
 		Eigen::Vector2f cp = p - c; // terminal point - initial point = vector CP
 		Eigen::Vector2f co = -c;
 
+		// compute angle PCL using R and r
+
+		float pcl = atan(R_ROBOT / r); // arctan (robot / radius of rotation)
+
 		
+
 
 		return true;
 
