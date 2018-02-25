@@ -7,6 +7,8 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Eigenvalues>
 
+#include <visualization_msgs/Marker.h>
+
 #include "cobot_msgs/CobotDriveMsg.h"
 #include "compsci403_assignment4/ObstacleMsg.h"
 #include "compsci403_assignment4/CheckPointSrv.h"
@@ -23,6 +25,8 @@ ros::ServiceServer g_GetCommandVelSrv; // Service /COMPSCI403/GetCommandVel
 ros::Subscriber g_LaserSub; // Subscriber /Cobot/Laser
 
 ros::Publisher g_ObstaclesPub; // Publisher /COMPSCI403/Obstacles
+
+ros::Publisher g_VisPub; // For Visualizations
 
 const float TIME_DELTA = .05f; // velocity update every .05 seconds
 const float V_MAX = .5f; // max velocity is .5 m/s
@@ -49,6 +53,20 @@ typedef pair<geometry_msgs::Point32, float> pointdistpair;
 
 namespace t_helpers
 {
+
+visualization_msgs::Marker GenPointListMarkers(const sensor_msgs::PointCloud all_pts, 
+																							const vector< pointdistpair > obstacle_pts,
+																							const string frame_id  )
+{
+	static size_t id = 0;
+	visualization_msgs::Marker m;
+	m.header.frame_id = frame_id;
+	m.header.stamp = ros::Time();
+	m.ns = "t_helpers";
+	m.id = id ++;
+
+	return m;
+}
 
 // function prototypes ONLY
 bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f);
