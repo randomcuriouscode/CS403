@@ -3,6 +3,8 @@
 #include <geometry_msgs/Point32.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/LaserScan.h>
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Eigenvalues>
 
 #include "cobot_msgs/CobotDriveMsg.h"
 #include "compsci403_assignment4/ObstacleMsg.h"
@@ -14,7 +16,56 @@
 
 // Declare class variables, subscribers, publishers, messages
 
+ros::ServiceServer g_CheckPointSrv;
+
+const float TIME_DELTA = .05f; // velocity update every .05 seconds
+const float S_MAX = .25f; // max stopping distance .25m by V_max^2 / (2a_max)
+const float R_ROBOT = .18f; // radius of robot is .18m
+
+using namespace std;
+
 // Define service and callback functions
+
+bool CheckPointCallback (compsci403_assignment4::CheckPointSrv::Request &req,
+												 compsci403_assignment4::CheckPointSrv::Response &res)
+{
+	Eigen::Vector2f p (req.P.x, req.P.y); // z value is always 0, 2d point
+
+	if (!req.w) // 0 angular vel, calculate straight line free path to p
+	{	// let robot be moving along x axis
+
+		// if the y value of p is within radius of robot, it is an obstacle
+		if (abs(p.y()) <= R_ROBOT)
+		{
+			res.is_obstacle = true;
+			// since p is obstacle, compute free path length
+			float f = p.x() - sqrt(pow(R_ROBOT, 2.0f) - pow(p.y(), 2.0f));
+
+			ROS_DEBUG("p.y: %f is less than R_ROBOT: %f, free path length: %f", p.y(), R_ROBOT, f);
+
+			res.free_path_length = f;
+
+			return true; // free path and obstacle found with 0 velocity
+		}
+	}
+	else
+	{ // must deal with angular velocity
+
+		Eigen::Vector2f c (0, req.v / req.w);	// calculate center of rotation
+
+		float r = c.norm(); // radius of rotation is the L1 norm 
+
+		Eigen::Vector2f cp = p - c; // terminal point - initial point = vector CP
+		Eigen::Vector2f co = -c;
+
+		
+
+		return true;
+
+	}
+
+	return true;
+}
 
 int main(int argc, char **argv) {
 
@@ -22,6 +73,11 @@ int main(int argc, char **argv) {
   ros::NodeHandle n;
 
 	// Perform operations defined in Assignment 4
+
+	// 1. Provide Service /COMPSCI403/CheckPoint
+  g_CheckPointSrv = n.advertiseService("/COMPSCI403/CheckPoint", CheckPointCallback);
+
+
 
 	ros::spin();
 
