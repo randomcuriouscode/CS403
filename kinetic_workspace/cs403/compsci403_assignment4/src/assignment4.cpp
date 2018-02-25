@@ -24,26 +24,26 @@ const float R_ROBOT = .18f; // radius of robot is .18m
 
 using namespace std;
 
-// Define service and callback functions
-
-bool CheckPointCallback (compsci403_assignment4::CheckPointSrv::Request &req,
-												 compsci403_assignment4::CheckPointSrv::Response &res)
+namespace t_helpers
 {
-	Eigen::Vector2f p (req.P.x, req.P.y); // z value is always 0, 2d point
-
-	if (!req.w) // 0 angular vel, calculate straight line free path to p
+/*
+	@param p 2x1 Vector input point
+	@param 
+*/
+bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f)
+{
+	if (!w) // 0 angular vel, calculate straight line free path to p
 	{	// let robot be moving along x axis
 
 		// if the y value of p is within radius of robot, it is an obstacle
 		if (abs(p.y()) <= R_ROBOT)
 		{
-			res.is_obstacle = true;
 			// since p is obstacle, compute free path length
 			float f = p.x() - sqrt(pow(R_ROBOT, 2.0f) - pow(p.y(), 2.0f));
 
 			ROS_DEBUG("p.y: %f is less than R_ROBOT: %f, free path length: %f", p.y(), R_ROBOT, f);
 
-			res.free_path_length = f;
+			*out_f = f;
 
 			return true; // free path and obstacle found with 0 angular velocity
 		} //end if (abs(p.y() < R_ROBOT)
@@ -51,16 +51,14 @@ bool CheckPointCallback (compsci403_assignment4::CheckPointSrv::Request &req,
 		{
 			ROS_DEBUG("p.y: %f is greater than R_ROBOT: %f, not obstacle", p.y(), R_ROBOT);
 
-			res.is_obstacle = false;
-
-			return true;
+			return false; // not an obstacle
 		} // end else
-	} // end if (!req.w)
+	} // end if (!w)
 	else
-	{ // must deal with angular velocity
+	{ // not a straight line path
 
 
-		Eigen::Vector2f c (0, req.v / req.w);	// calculate center of rotation
+		Eigen::Vector2f c (0, v / w);	// calculate center of rotation
 
 		float r = c.norm(); // radius of rotation is the L1 norm of the center of rotation
 
@@ -82,17 +80,38 @@ bool CheckPointCallback (compsci403_assignment4::CheckPointSrv::Request &req,
 
 		float f = lco * r; // free path arclength = free path angle * radius of rotation
 
-		res.is_obstacle = true;
-		res.free_path_length = f;
-
+		*out_f = f;
 		return true; // free path obstacle found along curve
 		} // end if p_dist_from_robot < R_ROBOT
 		else // not an obstacle
 		{
-			res.is_obstacle = false;
-			return true; // no obstacle along path
+			return false; // no obstacle along path
 		} // end else
 	} // end else
+} // end PointIsObstacle
+
+} // end helper mainspace
+
+// Define service and callback functions
+
+bool CheckPointCallback (compsci403_assignment4::CheckPointSrv::Request &req,
+												 compsci403_assignment4::CheckPointSrv::Response &res)
+{
+	Eigen::Vector2f p (req.P.x, req.P.y); // z value is always 0, 2d point
+
+	float f = -1.0f;
+
+	bool obstacle = t_helpers::PointIsObstacle(p, req.v, req.w, &f);
+
+	if (obstacle)
+	{
+		res.is_obstacle = true;
+		res.free_path_length = f;
+	}
+	else
+	{
+		res.is_obstacle = false;
+	}
 
 	return true;
 }
