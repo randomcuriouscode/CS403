@@ -251,7 +251,13 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 
 	t_helpers::ProjectRangeFinderToRobotRef(msg, translated_pc);
 
+	// publish converted points
 
+	compsci403_assignment4::ObstacleMsg res;
+	res.header = msg.header;
+	res.obstacle_points = translated_pc.points;
+
+	g_ObstaclesPub.publish(res);
 }
 
 int main(int argc, char **argv) {
