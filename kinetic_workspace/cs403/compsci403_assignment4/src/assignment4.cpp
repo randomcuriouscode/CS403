@@ -28,8 +28,8 @@ const float S_MAX = .25f; // max stopping distance .25m by V_max^2 / (2a_max)
 const float R_ROBOT = .18f; // radius of robot is .18m
 
 const Eigen::Matrix3f M_ROTATION = (Eigen::Matrix3f() << 1.f, 0.f, 0.f,
-																															0.f, 1.f, 0.f,
-																															0.f, 0.f, 1.f).finished();
+																												 0.f, 1.f, 0.f,
+																												 0.f, 0.f, 1.f).finished();
 
 const Eigen::MatrixXf M_TRANSLATION = (Eigen::MatrixXf(3,1) << .145f, 0.f, 0.23f).finished();
 
@@ -279,7 +279,13 @@ int main(int argc, char **argv) {
   // 3. Create Subscriber /Cobot/Laser
   g_LaserSub = n.subscribe("/Cobot/Laser", 1000, ScanOccurredCallback);
 
-	ros::spin();
+  ros::Rate spin_rate (20); // 20 hz
+	
+	while (ros::ok())
+	{
+		ros::spinOnce();
+		spin_rate.sleep();
+	}
 
   return(0);
 }
