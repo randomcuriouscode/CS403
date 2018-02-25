@@ -342,10 +342,22 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 	}
 
 	sensor_msgs::PointCloud translated_pc = g_TranslatedPC;
-	g_TranslatedPC = sensor_msgs::PointCloud(); // reset the cached pointcloud
-
-
 	
+	vector< pointdistpair > obstacle_points;
+	pointdistpair closest_pt;
+
+	bool obstacle = t_helpers::ObstacleExist(translated_pc, req.v_0, req.w_0, obstacle_points, closest_pt);
+	
+	if (obstacle)
+	{
+
+	}
+	else // no obstacles
+	{
+
+	}
+
+	g_TranslatedPC = sensor_msgs::PointCloud(); // reset the cached pointcloud
 }
 
 int main(int argc, char **argv) {
