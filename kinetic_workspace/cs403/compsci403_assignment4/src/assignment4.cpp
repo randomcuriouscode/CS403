@@ -48,8 +48,18 @@ using namespace std;
 namespace t_helpers
 {
 
+// function prototypes ONLY
 bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f);
 
+// end function prototypes
+
+/*
+	@param pc input PointCloud
+	@param v velocity scalar
+	@param w angular velocity scalar
+	@param out_pointmap output vector of points to their free path distance
+	@param out_closest output closest point and free path distance
+*/
 bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float w,
 					vector< pair<geometry_msgs::Point32, float> > &out_pointmap, 
 					pair<geometry_msgs::Point32, float> &out_closest)
@@ -93,6 +103,9 @@ bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float 
 	}
 }
 
+/*
+	Convenience function to output only the free path distance, discarding other output.
+*/
 bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float w, float *out_f)
 {
 	vector< pair<geometry_msgs::Point32, float> > dont_care;
@@ -280,31 +293,15 @@ bool GetFreePathCallback (compsci403_assignment4::GetFreePathSrv::Request &req,
 	// laser scan is already in the reference frame of the robot, just convert it to a pointcloud
 	t_helpers::LaserScanToPointCloud(req.laser_scan, pc); 
 
-	bool obstacle = false; // true if not obstacle free
-	float min_f = numeric_limits<float>::max(); // keep track of min free path len
-
-	for (vector<geometry_msgs::Point32>::iterator it = pc.points.begin(); it != pc.points.end(); 
-				it++) // iterate over all converted points to find obstacle
-	{
-		float temp_f;
-		bool temp_obstacle = t_helpers::PointIsObstacle(Eigen::Vector2f(it->x, it->y), 
-																										req.v, req.w, &temp_f);
-		if (temp_obstacle) // found an obstacle
-		{
-			obstacle = true;
-			if (temp_f < min_f) // obstacle is closer than current closest
-			{
-				ROS_DEBUG("GetFreePathCallback: Found an obstacle: %f, cur min: %f", temp_f, min_f);
-				min_f = temp_f;
-			}
-		}
-	}
+	float closest_pt = -1.0f;
+	bool obstacle = t_helpers::ObstacleExist(pc, req.v, req.w, &closest_pt); // true if not obstacle free
+	
 
 	if (obstacle) // at least one obstacle was found
 	{
-		ROS_DEBUG("GetFreePathCallback: At least 1 obstacle: %f", min_f);
+		ROS_DEBUG("GetFreePathCallback: At least 1 obstacle: %f", closest_pt);
 		res.is_obstacle = true;
-		res.free_path_length = min_f;
+		res.free_path_length = closest_pt;
 	}
 	else // no obstacles along the path
 	{
