@@ -19,11 +19,16 @@
 
 ros::ServiceServer g_CheckPointSrv; // Service /COMPSCI403/CheckPoint
 ros::ServiceServer g_GetFreePathSrv; // Service /COMPSCI403/GetFreePath
+ros::ServiceServer g_GetCommandVelSrv; // Service /COMPSCI403/GetCommandVel
 ros::Subscriber g_LaserSub; // Subscriber /Cobot/Laser
 
 ros::Publisher g_ObstaclesPub; // Publisher /COMPSCI403/Obstacles
 
 const float TIME_DELTA = .05f; // velocity update every .05 seconds
+const float V_MAX = .5f; // max velocity is .5 m/s
+const float W_MAX = 1.5f; // max angular velocity is 1.5 rad/s
+const float AC_MAX = .5f; // max linear acceleration is .5 m/s^2
+const float WC_MAX = 2.0f; // max angular acceleration is 2 rad/s^2
 const float S_MAX = .25f; // max stopping distance .25m by V_max^2 / (2a_max)
 const float R_ROBOT = .18f; // radius of robot is .18m
 
@@ -33,10 +38,16 @@ const Eigen::Matrix3f M_ROTATION = (Eigen::Matrix3f() << 1.f, 0.f, 0.f,
 
 const Eigen::MatrixXf M_TRANSLATION = (Eigen::MatrixXf(3,1) << .145f, 0.f, 0.23f).finished();
 
+static sensor_msgs::PointCloud g_TranslatedPC; // store translated point cloud from result of part 3
+																							 // could make a class wrapper for access, but not sure
+																							 // how to deal with multiple copies occurring on stack
+
 using namespace std;
+
 
 namespace t_helpers
 {
+	
 /*
 	@param p 2x1 Vector input point
 	@param v velocity scalar
@@ -154,7 +165,7 @@ void ProjectRangeFinderToRobotRef(const sensor_msgs::LaserScan &msg, sensor_msgs
 
 	LaserScanToPointCloud(msg, scanner_pc); // translate laser scan to a point cloud in refframe of scanner
 
-	for (vector<geometry_msgs::Point32>::iterator it = scanner_pc.points.begin(); it != scanner_pc.points.end();
+	for (vector<geometry_msgs::Point32>::const_iterator it = scanner_pc.points.begin(); it != scanner_pc.points.end();
 			it++) // iterate through scanner pointcloud, translate to robot reference frame with P' = RP + T
 	{
 		// assume it->z is 0 since this is in  2-D
@@ -260,6 +271,12 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 	g_ObstaclesPub.publish(res);
 }
 
+bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &req,
+													 	compsci403_assignment4::GetCommandVelSrv::Response &res)
+{
+	return true;
+}
+
 int main(int argc, char **argv) {
 
   ros::init(argc, argv, "assignment4");
@@ -278,6 +295,9 @@ int main(int argc, char **argv) {
 
   // 3. Create Subscriber /Cobot/Laser
   g_LaserSub = n.subscribe("/Cobot/Laser", 1000, ScanOccurredCallback);
+
+  // 4. Create Service /COMPSCI403/GetCommandVel
+  g_GetCommandVelSrv = n.advertiseService("/COMPSCI403/GetCommandVel", GetCommandVelCallback);
 
   ros::Rate spin_rate (20); // 20 hz
 	
