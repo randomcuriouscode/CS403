@@ -45,8 +45,8 @@ bool CheckPointCallback (compsci403_assignment4::CheckPointSrv::Request &req,
 
 			res.free_path_length = f;
 
-			return true; // free path and obstacle found with 0 velocity
-		}
+			return true; // free path and obstacle found with 0 angular velocity
+		} //end if (abs(p.y() < R_ROBOT)
 		else // not an obstacle
 		{
 			ROS_DEBUG("p.y: %f is greater than R_ROBOT: %f, not obstacle", p.y(), R_ROBOT);
@@ -54,8 +54,8 @@ bool CheckPointCallback (compsci403_assignment4::CheckPointSrv::Request &req,
 			res.is_obstacle = false;
 
 			return true;
-		}
-	}
+		} // end else
+	} // end if (!req.w)
 	else
 	{ // must deal with angular velocity
 
@@ -70,18 +70,29 @@ bool CheckPointCallback (compsci403_assignment4::CheckPointSrv::Request &req,
 		{
 
 		Eigen::Vector2f cp = p - c; // terminal point - initial point = vector CP
-		Eigen::Vector2f co = -c;
+		Eigen::Vector2f co = -c; // vector CO
 
-		// compute angle PCL using R and r
+		float pco = acos(cp.dot(co) / (cp.norm() * co.norm())); // total angle covered about c
+
+		// compute angle PCL using R and r (angle of center of robot to end of free path)
 
 		float pcl = atan(R_ROBOT / r); // arctan (robot / radius of rotation)
 
-		
+		float lco = pco - pcl; // free path angle
 
+		float f = lco * r; // free path arclength = free path angle * radius of rotation
 
-		return true;
+		res.is_obstacle = true;
+		res.free_path_length = f;
 
-	}
+		return true; // free path obstacle found along curve
+		} // end if p_dist_from_robot < R_ROBOT
+		else // not an obstacle
+		{
+			res.is_obstacle = false;
+			return true; // no obstacle along path
+		} // end else
+	} // end else
 
 	return true;
 }
@@ -95,8 +106,6 @@ int main(int argc, char **argv) {
 
 	// 1. Provide Service /COMPSCI403/CheckPoint
   g_CheckPointSrv = n.advertiseService("/COMPSCI403/CheckPoint", CheckPointCallback);
-
-
 
 	ros::spin();
 
