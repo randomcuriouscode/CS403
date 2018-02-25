@@ -47,7 +47,7 @@ using namespace std;
 
 namespace t_helpers
 {
-	
+
 /*
 	@param p 2x1 Vector input point
 	@param v velocity scalar
@@ -175,7 +175,7 @@ void ProjectRangeFinderToRobotRef(const sensor_msgs::LaserScan &msg, sensor_msgs
 		geometry_msgs::Point32 pt_p_prime;
 		pt_p_prime.x = p_prime.x();
 		pt_p_prime.y = p_prime.y();
-		pt_p_prime.z = 0;
+		pt_p_prime.z = 0; // 2-d, z value is 0.
 
 		translated_pc.points.push_back(pt_p_prime);
 	}
@@ -268,13 +268,24 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 	res.header = msg.header;
 	res.obstacle_points = translated_pc.points;
 
+	g_TranslatedPC = translated_pc; // set global for part 4. gross, but necessary.
+
 	g_ObstaclesPub.publish(res);
 }
 
 bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &req,
 													 	compsci403_assignment4::GetCommandVelSrv::Response &res)
 {
-	return true;
+	if (g_TranslatedPC.points.size() == 0)
+	{
+		ROS_ERROR("GetCommandVelCallback: FATAL ERROR, /Cobot/Laser was NOT published to before this call. PointCloud global size is 0");
+		return true; // TODO: this should be return false by ROS spec, but instructor says false is bad.
+	}
+
+	sensor_msgs::PointCloud translated_pc = g_TranslatedPC;
+	g_TranslatedPC = sensor_msgs::PointCloud(); // reset the cached pointcloud
+
+	
 }
 
 int main(int argc, char **argv) {
