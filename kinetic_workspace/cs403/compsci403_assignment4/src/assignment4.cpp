@@ -44,6 +44,8 @@ static sensor_msgs::PointCloud g_TranslatedPC; // store translated point cloud f
 
 using namespace std;
 
+typedef pair<geometry_msgs::Point32, float> pointdistpair;
+
 
 namespace t_helpers
 {
@@ -61,8 +63,8 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f);
 	@param out_closest output closest point and free path distance
 */
 bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float w,
-					vector< pair<geometry_msgs::Point32, float> > &out_pointmap, 
-					pair<geometry_msgs::Point32, float> &out_closest)
+					vector< pointdistpair > &out_pointmap, 
+					pointdistpair &out_closest)
 {
 	bool obstacle = false; // true if not obstacle free
 	float min_f = numeric_limits<float>::max(); // keep track of min free path len
@@ -78,7 +80,7 @@ bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float 
 		{
 			obstacle = true;
 
-			out_pointmap.push_back(pair<geometry_msgs::Point32, float>(*it, temp_f)); // push to output vector
+			out_pointmap.push_back(pointdistpair(*it, temp_f)); // push to output vector
 
 			if (temp_f < min_f) // obstacle is closer than current closest
 			{
@@ -108,8 +110,8 @@ bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float 
 */
 bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float w, float *out_f)
 {
-	vector< pair<geometry_msgs::Point32, float> > dont_care;
-	pair<geometry_msgs::Point32, float> closest_pt;
+	vector< pointdistpair > dont_care;
+	pointdistpair closest_pt;
 
 	bool obstacle = ObstacleExist(pc, v, w, dont_care, closest_pt);
 
@@ -341,6 +343,7 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 
 	sensor_msgs::PointCloud translated_pc = g_TranslatedPC;
 	g_TranslatedPC = sensor_msgs::PointCloud(); // reset the cached pointcloud
+
 
 	
 }
