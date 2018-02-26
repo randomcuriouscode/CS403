@@ -5,6 +5,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <cstdlib>
 #include <random>
+#include <iostream>
 
 #include "cobot_msgs/CobotDriveMsg.h"
 #include "compsci403_assignment4/ObstacleMsg.h"
@@ -31,24 +32,35 @@ sensor_msgs::LaserScan GenRandomLaserScan(string frame_id)
 	float ranges[num_readings];
 	float intensities[num_readings] = {0.f};
 
+	random_device rd;
+	mt19937 gen(rd());
+	std::uniform_real_distribution<float> rdm(0.019999999553f, 4.0f);
+
+	for (size_t i = 0; i < num_readings; i ++)
+	{
+		ranges[i] = rdm(gen);
+	}
+
 	ros::Time scan_time = ros::Time::now();
 
 	sensor_msgs::LaserScan scan;
 	scan.header.stamp = scan_time;
 	scan.header.frame_id = frame_id;
-	scan.angle_min = -1.57;
-	scan.angle_max = 1.57;
+	scan.angle_min = -1.57f;
+	scan.angle_max = 1.57f;
 	scan.angle_increment = 3.14 / num_readings;
 	scan.time_increment = (1 / laser_frequency) / (num_readings);
-	scan.range_min = 0.0;
-	scan.range_max = 100.0;
+	scan.range_min = 0.019999999553f;
+	scan.range_max = 4.0f;
 
 	scan.ranges.resize(num_readings);
 	scan.intensities.resize(num_readings);
-	for(unsigned int i = 0; i < num_readings; ++i){
+	for(size_t i = 0; i < num_readings; ++i){
 	 scan.ranges[i] = ranges[i];
 	 scan.intensities[i] = intensities[i];
 	}
+
+	return scan;
 }
 
 int main(int argc, char **argv) {
@@ -65,11 +77,37 @@ int main(int argc, char **argv) {
   	switch (option)
   	{
   		case 2:
+  		{
   		g_GetFreePathCl = n.serviceClient<compsci403_assignment4::GetFreePathSrv>("/COMPSCI403/GetFreePath");
+  		float v = atof(argv[2]);
+  		float w = atof(argv[3]);
 
+  		string input;
+  		while (getline(cin, input))
+  		{
+  			if (input.find("\n") != string::npos)
+  			{
+  				// call the GetFreePath service
+  				compsci403_assignment4::GetFreePathSrv msg;
+  				msg.request.laser_scan = GenRandomLaserScan("/base_footprint");
+  				msg.request.v = v;
+  				msg.request.w = w;
+
+  				auto res = g_GetFreePathCl.call(msg);
+
+  				if (res)
+  				{
+  					ROS_INFO("SVC RETURNED %d, %f:", msg.response.is_obstacle, msg.response.free_path_length);
+  				}
+  				else
+  				{
+  					ROS_ERROR("Error occurred with GetFreePath");
+  				}		
+  			}
+  		}
   		break;
-
- 		default:
+  		}
+		default:
  		ROS_INFO("Option Invalid");
  		return(0);
   	}
