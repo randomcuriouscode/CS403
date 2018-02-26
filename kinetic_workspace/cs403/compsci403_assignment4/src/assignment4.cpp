@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <geometry_msgs/Point32.h>
+#include <geometry_msgs/Point.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud.h>
@@ -8,6 +9,7 @@
 #include <eigen3/Eigen/Eigenvalues>
 
 #include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
 
 #include "cobot_msgs/CobotDriveMsg.h"
 #include "compsci403_assignment4/ObstacleMsg.h"
@@ -54,18 +56,70 @@ typedef pair<geometry_msgs::Point32, float> pointdistpair;
 namespace t_helpers
 {
 
-visualization_msgs::Marker GenPointListMarkers(const sensor_msgs::PointCloud all_pts, 
+visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointCloud all_pts, 
 																							const vector< pointdistpair > obstacle_pts,
 																							const string frame_id  )
 {
+	visualization_msgs::MarkerArray arr;
+
 	static size_t id = 0;
 	visualization_msgs::Marker m;
-	m.header.frame_id = frame_id;
-	m.header.stamp = ros::Time();
-	m.ns = "t_helpers";
-	m.id = id ++;
+	if (all_pts.points.size()){
+		m.header.frame_id = frame_id;
+		m.header.stamp = ros::Time();
+		m.ns = "t_helpers";
+		m.id = id ++;
+		m.type = visualization_msgs::Marker::POINTS;
+		m.action = visualization_msgs::Marker::ADD;
+		m.scale.x = .1f;
+		m.scale.y = .1f;
+		m.color.a = 1.f;
+		m.color.r = 0.f;
+		m.color.g = 1.f;
+		m.color.b = 0.f;
 
-	return m;
+		// convert all_points.points to 
+		for (vector<geometry_msgs::Point32>::const_iterator it = all_pts.points.begin(); it != all_pts.points.end(); it ++)
+		{
+			geometry_msgs::Point p64; 
+			p64.x = (double) it->x;
+			p64.y = (double) it->y;
+			p64.z = 0.0f;
+			m.points.push_back(p64);
+		}
+
+		arr.markers.push_back(m); // add all points to marker vector
+	}
+	if (obstacle_pts.size())
+	{
+		m = visualization_msgs::Marker();
+		m.header.frame_id = frame_id;
+		m.header.stamp = ros::Time();
+		m.ns = "t_helpers";
+		m.id = id ++;
+		m.type = visualization_msgs::Marker::POINTS;
+		m.action = visualization_msgs::Marker::ADD;
+		m.scale.x = .1f;
+		m.scale.y = .1f;
+		m.color.a = 1.f;
+		m.color.r = 1.f;
+		m.color.g = 0.f;
+		m.color.b = 0.f;
+
+		for (vector< pointdistpair >::const_iterator it = obstacle_pts.begin(); it != obstacle_pts.end(); it ++)
+		{
+			const geometry_msgs::Point32 &p = it->first;
+			geometry_msgs::Point p64;
+			p64.x = (double) p.x;
+			p64.y = (double) p.y;
+			p64.z = p.z;
+			m.points.push_back(p64);
+		}
+
+		arr.markers.push_back(m);
+	}
+
+	return arr;
 }
 
 // function prototypes ONLY
@@ -376,6 +430,7 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 	}
 
 	g_TranslatedPC = sensor_msgs::PointCloud(); // reset the cached pointcloud
+	return true;
 }
 
 int main(int argc, char **argv) {
