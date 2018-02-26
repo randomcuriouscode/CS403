@@ -367,15 +367,18 @@ bool GetFreePathCallback (compsci403_assignment4::GetFreePathSrv::Request &req,
 	// laser scan is already in the reference frame of the robot, just convert it to a pointcloud
 	t_helpers::LaserScanToPointCloud(req.laser_scan, pc); 
 
-	float closest_pt = -1.0f;
-	bool obstacle = t_helpers::ObstacleExist(pc, req.v, req.w, &closest_pt); // true if not obstacle free
-	
+	vector< pointdistpair > obstacles;
+	pointdistpair closest_pt;
+	bool obstacle = t_helpers::ObstacleExist(pc, req.v, req.w, obstacles, closest_pt); // true if not obstacle free
+
+	// publish to visualization_marker_array
+	g_VisPub.publish(t_helpers::GenPointListMarkers(pc, obstacles, "/base_footprint"));
 
 	if (obstacle) // at least one obstacle was found
 	{
-		ROS_DEBUG("GetFreePathCallback: At least 1 obstacle: %f", closest_pt);
+		ROS_DEBUG("GetFreePathCallback: At least 1 obstacle: %f", closest_pt.second);
 		res.is_obstacle = true;
-		res.free_path_length = closest_pt;
+		res.free_path_length = closest_pt.second;
 	}
 	else // no obstacles along the path
 	{
@@ -439,6 +442,8 @@ int main(int argc, char **argv) {
   ros::NodeHandle n;
 
 	// Perform operations defined in Assignment 4
+	// 0. publish topic visualization_marker_array
+	g_VisPub = n.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 1000);
 
 	// 1. Provide Service /COMPSCI403/CheckPoint
   g_CheckPointSrv = n.advertiseService("/COMPSCI403/CheckPoint", CheckPointCallback);
