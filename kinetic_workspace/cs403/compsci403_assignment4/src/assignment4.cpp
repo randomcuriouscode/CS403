@@ -212,7 +212,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f)
 			// since p is obstacle, compute free path length
 			float f = p.x() - sqrt(pow(R_ROBOT, 2.0f) - pow(p.y(), 2.0f));
 
-			ROS_DEBUG("p.y: %f is less than R_ROBOT: %f, free path length: %f", p.y(), R_ROBOT, f);
+			ROS_DEBUG("PointIsObstacle: p.y: %f is less than R_ROBOT: %f, free path length: %f", p.y(), R_ROBOT, f);
 
 			*out_f = f;
 
@@ -220,7 +220,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f)
 		} //end if (abs(p.y() < R_ROBOT)
 		else // not an obstacle
 		{
-			ROS_DEBUG("p.y: %f is greater than R_ROBOT: %f, not obstacle", p.y(), R_ROBOT);
+			ROS_DEBUG("PointIsObstacle: p.y: %f is greater than R_ROBOT: %f, not obstacle", p.y(), R_ROBOT);
 
 			return false; // not an obstacle
 		} // end else
@@ -251,6 +251,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f)
 
 		float f = lco * r; // free path arclength = free path angle * radius of rotation
 
+		ROS_DEBUG("PointIsObstacle: pcl: %f, lco: %f, f: %f", pcl, lco, f);
 		*out_f = f;
 		return true; // free path obstacle found along curve
 		} // end if p_dist_from_robot < R_ROBOT
