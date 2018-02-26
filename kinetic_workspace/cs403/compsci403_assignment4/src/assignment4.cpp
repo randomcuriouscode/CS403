@@ -255,7 +255,8 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f)
 
 		float f = lco * r; // free path arclength = free path angle * radius of rotation
 
-		ROS_DEBUG("PointIsObstacle: pco: %f, pcl: %f, lco: %f, f: %f", pco, pcl, lco, f);
+		ROS_DEBUG("PointIsObstacle: p.x:%f, p.y:%f, pco: %f, pcl: %f, lco: %f, f: %f", 
+			p.x(), p.y(), pco, pcl, lco, f);
 		*out_f = f;
 		return true; // free path obstacle found along curve
 		} // end if p_dist_from_robot < R_ROBOT

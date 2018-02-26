@@ -50,7 +50,7 @@ sensor_msgs::LaserScan GenRandomLaserScan(string frame_id)
 	scan.angle_max = 1.57f;
 	scan.angle_increment = 3.14 / num_readings;
 	scan.time_increment = (1 / laser_frequency) / (num_readings);
-	scan.range_min = 0.019999999553f;
+	scan.range_min = 0.19f;
 	scan.range_max = 4.0f;
 
 	scan.ranges.resize(num_readings);
