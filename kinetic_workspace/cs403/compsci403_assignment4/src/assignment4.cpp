@@ -209,7 +209,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f)
 	{	// let robot be moving along x axis
 
 		// if the y value of p is within radius of robot, it is an obstacle
-		if (abs(p.y()) <= R_ROBOT)
+		if (abs(p.y()) <= R_ROBOT && signbit(p.x()) == signbit(v))
 		{
 			// since p is obstacle, compute free path length
 			float f = p.x() - sqrt(pow(R_ROBOT, 2.0f) - pow(p.y(), 2.0f));
@@ -222,7 +222,8 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f)
 		} //end if (abs(p.y() < R_ROBOT)
 		else // not an obstacle
 		{
-			ROS_DEBUG("PointIsObstacle: p.y: %f is greater than R_ROBOT: %f, not obstacle", p.y(), R_ROBOT);
+			ROS_DEBUG("PointIsObstacle: p.y: %f is greater than R_ROBOT: %f or sign(px)%d =sign(v) %d, not obstacle", 
+							p.y(), R_ROBOT, signbit(p.x()), signbit(v));
 
 			return false; // not an obstacle
 		} // end else
