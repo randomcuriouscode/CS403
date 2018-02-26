@@ -71,8 +71,8 @@ visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointClou
 		m.id = id ++;
 		m.type = visualization_msgs::Marker::POINTS;
 		m.action = visualization_msgs::Marker::ADD;
-		m.scale.x = .1f;
-		m.scale.y = .1f;
+		m.scale.x = .02f;
+		m.scale.y = .02f;
 		m.color.a = 1.f;
 		m.color.r = 0.f;
 		m.color.g = 1.f;
@@ -98,9 +98,9 @@ visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointClou
 		m.ns = "t_helpers.obstacle";
 		m.id = id ++;
 		m.type = visualization_msgs::Marker::POINTS;
-		m.action = visualization_msgs::Marker::MODIFY;
-		m.scale.x = .1f;
-		m.scale.y = .1f;
+		m.action = visualization_msgs::Marker::ADD;
+		m.scale.x = .02f;
+		m.scale.y = .02f;
 		m.color.a = 1.f;
 		m.color.r = 1.f;
 		m.color.g = 0.f;
@@ -112,7 +112,9 @@ visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointClou
 			geometry_msgs::Point p64;
 			p64.x = (double) p.x;
 			p64.y = (double) p.y;
-			p64.z = p.z;
+			p64.z = 0.0f;
+			remove_if(arr.markers[0].points.begin(), arr.markers[0].points.end(), 
+								[p64](geometry_msgs::Point &otherp){return otherp.x == p64.x && otherp.y == p64.y;});
 			m.points.push_back(p64);
 		}
 
@@ -246,6 +248,8 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f)
 		// compute angle PCL using R and r (angle of center of robot to end of free path)
 
 		float pcl = atan(R_ROBOT / r); // arctan (robot / radius of rotation)
+
+		pcl = std::abs(pcl);
 
 		float lco = pco - pcl; // free path angle
 
