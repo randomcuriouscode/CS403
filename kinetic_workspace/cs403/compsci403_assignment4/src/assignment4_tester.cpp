@@ -13,6 +13,9 @@
 #include "compsci403_assignment4/GetFreePathSrv.h"
 #include "compsci403_assignment4/GetCommandVelSrv.h"
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 using namespace std;
 
 // Include any additional header or service/message files
@@ -48,9 +51,9 @@ sensor_msgs::LaserScan GenRandomLaserScan(string frame_id)
 	scan.header.frame_id = frame_id;
 	scan.angle_min = -1.57f;
 	scan.angle_max = 1.57f;
-	scan.angle_increment = 3.14 / num_readings;
+	scan.angle_increment = M_PI / num_readings;
 	scan.time_increment = (1 / laser_frequency) / (num_readings);
-	scan.range_min = 0.19f;
+	scan.range_min = 0.25f;
 	scan.range_max = 4.0f;
 
 	scan.ranges.resize(num_readings);
