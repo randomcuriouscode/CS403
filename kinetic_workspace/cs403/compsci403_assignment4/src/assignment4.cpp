@@ -158,7 +158,7 @@ bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float 
 
 			if (temp_f < min_f) // obstacle is closer than current closest
 			{
-				ROS_DEBUG("GetFreePathCallback: Found an obstacle: %f, cur min: %f", temp_f, min_f);
+				ROS_DEBUG("ObstacleExist: Found an obstacle: %f, cur min: %f", temp_f, min_f);
 				closest_pt = *it;
 				min_f = temp_f;
 			}
@@ -167,14 +167,14 @@ bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float 
 
 	if (obstacle) // at least one obstacle was found
 	{
-		ROS_DEBUG("GetFreePathCallback: At least 1 obstacle: %f", min_f);
+		ROS_DEBUG("ObstacleExist: At least 1 obstacle: %f", min_f);
 		out_closest.first = closest_pt;
 		out_closest.second = min_f;
 		return true;
 	}
 	else // no obstacles along the path
 	{
-		ROS_DEBUG("GetFreePathCallback: No obstacles found along path");
+		ROS_DEBUG("ObstacleExist: No obstacles found along path");
 		return false;
 	}
 }
@@ -255,7 +255,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f)
 
 		float f = lco * r; // free path arclength = free path angle * radius of rotation
 
-		ROS_DEBUG("PointIsObstacle: pcl: %f, lco: %f, f: %f", pcl, lco, f);
+		ROS_DEBUG("PointIsObstacle: pco: %f, pcl: %f, lco: %f, f: %f", pco, pcl, lco, f);
 		*out_f = f;
 		return true; // free path obstacle found along curve
 		} // end if p_dist_from_robot < R_ROBOT
