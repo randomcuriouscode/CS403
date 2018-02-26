@@ -95,10 +95,10 @@ visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointClou
 		m = visualization_msgs::Marker();
 		m.header.frame_id = frame_id;
 		m.header.stamp = ros::Time();
-		m.ns = "t_helpers";
+		m.ns = "t_helpers.obstacle";
 		m.id = id ++;
 		m.type = visualization_msgs::Marker::POINTS;
-		m.action = visualization_msgs::Marker::ADD;
+		m.action = visualization_msgs::Marker::MODIFY;
 		m.scale.x = .1f;
 		m.scale.y = .1f;
 		m.color.a = 1.f;

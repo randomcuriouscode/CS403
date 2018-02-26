@@ -83,9 +83,10 @@ int main(int argc, char **argv) {
   		float w = atof(argv[3]);
 
   		string input;
-  		while (getline(cin, input))
+  		while (ros::ok())
   		{
-  			if (input.find("\n") != string::npos)
+        getline(cin, input);
+  			if (input.find("g") != string::npos)
   			{
   				// call the GetFreePath service
   				compsci403_assignment4::GetFreePathSrv msg;
