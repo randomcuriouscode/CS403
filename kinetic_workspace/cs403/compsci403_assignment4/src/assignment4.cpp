@@ -489,7 +489,7 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 		float best_cost = numeric_limits<float>::min();
 
 		for (auto it = disc_window.begin(); it != disc_window.end(); it++)
-		{
+		{ // iterate over each val in discrete window.
 			
 		}
 
