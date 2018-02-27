@@ -23,5 +23,6 @@ ROSBUILD_ADD_EXECUTABLE(assignment4_tester src/assignment4_tester.cpp)
 TARGET_LINK_LIBRARIES(assignment4_tester ${libs})
 
 rosbuild_add_gtest(utest test/utest.cpp)
+target_link_libraries(utest ${libs})
 
 ROSBUILD_LINK_BOOST(assignment4 system)

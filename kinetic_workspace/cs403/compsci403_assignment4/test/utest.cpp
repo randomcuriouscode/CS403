@@ -3,7 +3,11 @@
 
 TEST(TestSuite, test_GenDiscDynWind)
 {
+	Eigen::Vector2f test_velocity (.5f, 1.5f);
 
+	auto discwind = t_helpers::GenDiscDynWind(test_velocity, 10); ;
+
+	ASSERT_GE(discwind.size(), 100);
 }
 
 int main(int argc, char **argv)
