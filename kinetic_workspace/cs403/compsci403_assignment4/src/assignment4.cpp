@@ -59,6 +59,11 @@ typedef pair<geometry_msgs::Point32, float> pointdistpair;
 namespace t_helpers
 {
 
+// function prototypes ONLY
+bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f);
+
+// end function prototypes
+
 visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointCloud all_pts, 
 																							const vector< pointdistpair > obstacle_pts,
 																							const string frame_id  )
@@ -127,10 +132,53 @@ visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointClou
 	return arr;
 }
 
-// function prototypes ONLY
-bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f);
+/*
+	Generate a dynamic discretized set of viable (v,w) values given initial velocity
+	and how many subdivisions to make. Subdivisions should be a square value.
+	@param v_0 input linear/angular velocity
+	@param subdivisions amount of discretizations to make at a minimum
+	@returns a list of discretized possible linear/angular velocity values
+*/
+vector<Eigen::Vector2f> GenDiscDynWind (Eigen::Vector2f v_0, int subdivisions)
+{ // v_0.x = linear vel, v_0.y = angular vel
+	vector<Eigen::Vector2f> discretized;
 
-// end function prototypes
+	float step = sqrt(subdivisions);
+
+	// calc left window bound, must be within the critical window
+	float window_temp = -WC_MAX * TIME_DELTA + v_0.y();
+	float window_left = window_temp >= -W_CRIT ? window_temp : -W_CRIT;
+
+	// calc top window bound
+	window_temp = AC_MAX * TIME_DELTA + v_0.x();
+	float window_top = window_temp <= V_CRIT ? window_temp : V_CRIT;
+
+	// calc right window bound
+	window_temp = WC_MAX * TIME_DELTA + v_0.y();
+	float window_right = window_temp <= W_CRIT ? window_temp : W_CRIT;
+
+	// calc bottom window bound
+	window_temp = -AC_MAX * TIME_DELTA + v_0.x();
+	float window_bottom = window_temp >= 0 ? window_temp : 0;
+
+	// go bottom to top, left to right, increment v and w by step
+	for (float v = window_bottom; v < window_top; 
+			v =	v + step < window_top ? v + step : window_top) // always include top
+	{
+		for (float w = window_left; w < window_right; 
+			w = w + step < window_right ? w + step : window_right) // always include bottom
+		{
+			Eigen::Vector2f disc_val (v, w);
+			discretized.push_back(disc_val);
+		}
+	}
+
+	ROS_DEBUG("GenDiscDynWind: generated %ld values. window: [%f,%f,%f,%f]",
+						discretized.size(), window_left, window_top, window_right, window_bottom);
+
+	return discretized;
+}
+
 
 /*
 	@param pc input PointCloud
