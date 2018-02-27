@@ -50,6 +50,7 @@ const Eigen::MatrixXf M_TRANSLATION = (Eigen::MatrixXf(3,1) << .145f, 0.f, 0.23f
 static sensor_msgs::PointCloud g_TranslatedPC; // store translated point cloud from result of part 3
 																							 // could make a class wrapper for access, but not sure
 																							 // how to deal with multiple copies occurring on stack
+static int32_t DISCRETIZATIONS = 400;
 
 using namespace std;
 
@@ -139,7 +140,7 @@ visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointClou
 	@param subdivisions amount of discretizations to make at a minimum
 	@returns a list of discretized possible linear/angular velocity values
 */
-vector<Eigen::Vector2f> GenDiscDynWind (Eigen::Vector2f v_0, int subdivisions)
+inline vector<Eigen::Vector2f> GenDiscDynWind (Eigen::Vector2f v_0, int subdivisions)
 { // v_0.x = linear vel, v_0.y = angular vel
 	vector<Eigen::Vector2f> discretized;
 
@@ -482,12 +483,21 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 	bool obstacle = t_helpers::ObstacleExist(translated_pc, req.v_0, req.w_0, obstacle_points, closest_pt);
 	
 	if (obstacle)
-	{
+	{	
+		vector<Eigen::Vector2f> disc_window = t_helpers::GenDiscDynWind(Eigen::Vector2f(req.v_0, req.w_0), DISCRETIZATIONS);
+		Eigen::Vector2f best_vel;
+		float best_cost = numeric_limits<float>::min();
+
+		for (auto it = disc_window.begin(); it != disc_window.end(); it++)
+		{
+			
+		}
 
 	}
 	else // no obstacles
-	{
-
+	{ // robot can continue on its merry way
+		res.C_v = req.v_0;
+		res.C_w = req.w_0;
 	}
 
 	g_TranslatedPC = sensor_msgs::PointCloud(); // reset the cached pointcloud
@@ -498,6 +508,16 @@ int main(int argc, char **argv) {
 
   ros::init(argc, argv, "assignment4");
   ros::NodeHandle n;
+
+  if (argc > 1)
+  {
+  	DISCRETIZATIONS = atoi(argv[1]) > 0 ? atoi(argv[1]) : DISCRETIZATIONS;
+  	ROS_INFO("DISCRETIZATIONS set to %i", DISCRETIZATIONS);
+  }
+  else
+  {
+  	ROS_INFO("Param: Discretizations not set, defaulting");
+  }
 
 	// Perform operations defined in Assignment 4
 	// 0. publish topic visualization_marker_array
