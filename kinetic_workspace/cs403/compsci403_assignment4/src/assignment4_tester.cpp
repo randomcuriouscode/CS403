@@ -26,6 +26,8 @@ ros::ServiceClient g_GetFreePathCl;
 
 const uint32_t num_readings = 100;
 const float laser_frequency = 40;
+const float range_min = 0.25;
+const float range_max = 4;
 
 // Define service and callback functions
 
@@ -37,7 +39,7 @@ sensor_msgs::LaserScan GenRandomLaserScan(string frame_id)
 
 	random_device rd;
 	mt19937 gen(rd());
-	std::uniform_real_distribution<float> rdm(0.019999999553f, 4.0f);
+	std::uniform_real_distribution<float> rdm(range_min, range_max);
 
 	for (size_t i = 0; i < num_readings; i ++)
 	{
@@ -53,8 +55,8 @@ sensor_msgs::LaserScan GenRandomLaserScan(string frame_id)
 	scan.angle_max = 1.57f;
 	scan.angle_increment = M_PI / num_readings;
 	scan.time_increment = (1 / laser_frequency) / (num_readings);
-	scan.range_min = 0.25f;
-	scan.range_max = 4.0f;
+	scan.range_min = range_min;
+	scan.range_max = range_max;
 
 	scan.ranges.resize(num_readings);
 	scan.intensities.resize(num_readings);
