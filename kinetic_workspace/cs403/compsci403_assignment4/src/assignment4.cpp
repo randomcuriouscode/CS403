@@ -37,6 +37,9 @@ const float AC_MAX = .5f; // max linear acceleration is .5 m/s^2
 const float WC_MAX = 2.0f; // max angular acceleration is 2 rad/s^2
 const float S_MAX = .25f; // max stopping distance .25m by V_max^2 / (2a_max)
 const float R_ROBOT = .18f; // radius of robot is .18m
+const float V_CRIT = std::sqrt(2.0f * AC_MAX * S_MAX); // critical velocity
+const float SW_MAX = std::pow(W_MAX, 2.0f) / (2.0f * WC_MAX);
+const float W_CRIT = std::sqrt(2.0f * WC_MAX * SW_MAX);
 
 const Eigen::Matrix3f M_ROTATION = (Eigen::Matrix3f() << 1.f, 0.f, 0.f,
 																												 0.f, 1.f, 0.f,
