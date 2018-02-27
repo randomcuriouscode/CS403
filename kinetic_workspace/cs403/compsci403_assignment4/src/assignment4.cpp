@@ -108,22 +108,29 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 
 	sensor_msgs::PointCloud translated_pc = g_TranslatedPC;
 	
-	vector< pointdistpair > obstacle_points;
+	vector< pointdistpair > obstacles;
 	pointdistpair closest_pt;
 
-	bool obstacle = t_helpers::ObstacleExist(translated_pc, req.v_0, req.w_0, obstacle_points, closest_pt);
+	float dont_care;
+	bool obstacle = t_helpers::ObstacleExist(translated_pc, req.v_0, req.w_0, &dont_care);
 	
 	if (obstacle)
 	{	
 		vector<Eigen::Vector2f> disc_window = t_helpers::GenDiscDynWind(Eigen::Vector2f(req.v_0, req.w_0), DISCRETIZATIONS);
 		Eigen::Vector2f best_vel;
-		float best_cost = numeric_limits<float>::min();
+		float best_score = numeric_limits<float>::min();
 
 		for (auto it = disc_window.begin(); it != disc_window.end(); it++)
 		{ // iterate over each val in discrete window.
-			
+			bool obstacle = t_helpers::ObstacleExist(translated_pc, it->x(), it->y(), obstacles, closest_pt); // true if not obstacle free
+			float f = closest_pt.second;
 		}
 
+		ROS_DEBUG("GetCommandVelCallback: C_v: %f, C_w: %f, best_score: %f", 
+			best_vel.x(), best_vel.y(), best_score);
+
+		res.C_v = best_vel.x();
+		res.C_w = best_vel.y();
 	}
 	else // no obstacles
 	{ // robot can continue on its merry way
