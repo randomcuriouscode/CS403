@@ -1,6 +1,8 @@
 #include "assignment4.h"
 #include <gtest/gtest.h>
 
+#define GTEST
+
 TEST(TestSuite, test_GenDiscDynWind)
 {
 	Eigen::Vector2f test_velocity (.5f, 1.5f);

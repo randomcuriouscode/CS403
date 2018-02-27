@@ -226,10 +226,12 @@ inline vector<Eigen::Vector2f> GenDiscDynWind (Eigen::Vector2f v_0, int subdivis
 		}
 	}
 
+	#ifdef GTEST
 	std::cerr << "Discretized " << discretized.size() << "[" << window_left <<
 				"," << window_top << "," << window_right << "," << window_bottom << "]" << 
 				endl;
-
+	#endif
+				
 	ROS_DEBUG("GenDiscDynWind: generated %ld values. window: [%f,%f,%f,%f]",
 						discretized.size(), window_left, window_top, window_right, window_bottom);
 

@@ -1,21 +1,3 @@
-#include <ros/ros.h>
-#include <ros/package.h>
-#include <geometry_msgs/Point32.h>
-#include <geometry_msgs/Point.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <sensor_msgs/LaserScan.h>
-#include <sensor_msgs/PointCloud.h>
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/Eigenvalues>
-
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
-
-#include "cobot_msgs/CobotDriveMsg.h"
-#include "compsci403_assignment4/ObstacleMsg.h"
-#include "compsci403_assignment4/CheckPointSrv.h"
-#include "compsci403_assignment4/GetFreePathSrv.h"
-#include "compsci403_assignment4/GetCommandVelSrv.h"
 #include "assignment4.h"
 
 // Include any additional header or service/message files
