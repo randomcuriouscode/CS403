@@ -4,6 +4,7 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 ROSBUILD_INIT()
 
 ROSBUILD_ADD_BOOST_DIRECTORIES()
+include_directories(include)
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
@@ -20,5 +21,7 @@ TARGET_LINK_LIBRARIES(assignment4 ${libs})
 
 ROSBUILD_ADD_EXECUTABLE(assignment4_tester src/assignment4_tester.cpp)
 TARGET_LINK_LIBRARIES(assignment4_tester ${libs})
+
+rosbuild_add_gtest(utest test/utest.cpp)
 
 ROSBUILD_LINK_BOOST(assignment4 system)

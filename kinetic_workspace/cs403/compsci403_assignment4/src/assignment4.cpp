@@ -16,6 +16,7 @@
 #include "compsci403_assignment4/CheckPointSrv.h"
 #include "compsci403_assignment4/GetFreePathSrv.h"
 #include "compsci403_assignment4/GetCommandVelSrv.h"
+#include "assignment4.h"
 
 // Include any additional header or service/message files
 
