@@ -1,4 +1,5 @@
 #pragma once
+#define _USE_MATH_DEFINES
 
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -19,6 +20,8 @@
 #include "compsci403_assignment4/CheckPointSrv.h"
 #include "compsci403_assignment4/GetFreePathSrv.h"
 #include "compsci403_assignment4/GetCommandVelSrv.h"
+
+#include <cmath>
 
 using namespace std;
 
@@ -101,15 +104,17 @@ public:
 	}
 };
 
+/*
+	Constrain an angle between 0, 2pi
+*/
 float ConstrainAngle(float x)
 {
-	x = fmod(x, 360);
+	x = fmod(x, 2 * M_PI);
 	if (x < 0)
-		x += 360;
+		x += 2 * M_PI;
 
 	return x;
 }
-
 
 /*
 	@param p 2x1 Vector input point
