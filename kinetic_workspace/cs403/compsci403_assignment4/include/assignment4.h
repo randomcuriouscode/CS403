@@ -408,7 +408,7 @@ void LaserScanToPointCloud(const sensor_msgs::LaserScan &msg, sensor_msgs::Point
 
   std::size_t m = ranges.size();
 
-  ROS_INFO("Angle_min: %f, angle max: %f, angle_increment: %f, range_min: %f, range_max: %f, ranges_size: %lu",
+  ROS_DEBUG("Angle_min: %f, angle max: %f, angle_increment: %f, range_min: %f, range_max: %f, ranges_size: %lu",
       angle_min, angle_max, angle_increment, range_min, range_max, m);
 
   pc.header = msg.header;
@@ -424,7 +424,9 @@ void LaserScanToPointCloud(const sensor_msgs::LaserScan &msg, sensor_msgs::Point
       p.x = x_i;
       p.y = y_i;
 
-      ROS_INFO("X_%lu: %f,Y_%lu: %f", i, x_i, i, y_i);
+      #ifdef GTEST
+      ROS_DEBUG("X_%lu: %f,Y_%lu: %f", i, x_i, i, y_i);
+      #endif
 
       pc.points.push_back(p);
     }
