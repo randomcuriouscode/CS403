@@ -264,6 +264,7 @@ visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointClou
 	Generate a dynamic discretized set of viable (v,w) values given initial velocity
 	and how many subdivisions to make. Returns on average subdivisions^2 grid values.
 	Only returns admissible velocities within critical velocities.
+	Guaranteed to return a window containing at least v_0.
 	@param v_0 input linear/angular velocity
 	@param subdivisions amount of discretizations per row and per col.
 	@returns a list of discretized possible linear/angular velocity values
@@ -302,6 +303,8 @@ inline vector<Eigen::Vector2f> GenDiscDynWind (Eigen::Vector2f v_0, int subdivis
 			discretized.push_back(disc_val);
 		}
 	}
+
+	discretized.push_back(v_0); // add initial velocity, just in case.
 
 	#ifdef GTEST
 	std::cerr << "Discretized " << discretized.size() << "[" << window_left <<
