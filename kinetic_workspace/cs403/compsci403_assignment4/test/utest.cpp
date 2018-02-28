@@ -7,7 +7,25 @@ TEST(TestSuite, test_GenDiscDynWind)
 {
 	Eigen::Vector2f test_velocity (.5f, 1.5f);
 
-	auto discwind = t_helpers::GenDiscDynWind(test_velocity, 10); ;
+	auto discwind = t_helpers::GenDiscDynWind(test_velocity, 10);
+
+	ASSERT_GE(discwind.size(), 100);
+
+	test_velocity = Eigen::Vector2f (.5f, -1.5f);
+
+    discwind = t_helpers::GenDiscDynWind(test_velocity, 10);
+
+	ASSERT_GE(discwind.size(), 100);
+
+	test_velocity = Eigen::Vector2f(0, 1.5f);
+
+	discwind = t_helpers::GenDiscDynWind(test_velocity, 10);
+
+	ASSERT_GE(discwind.size(), 100);
+
+	test_velocity = Eigen::Vector2f(0, -1.5f);
+
+	discwind = t_helpers::GenDiscDynWind(test_velocity, 10);
 
 	ASSERT_GE(discwind.size(), 100);
 }
