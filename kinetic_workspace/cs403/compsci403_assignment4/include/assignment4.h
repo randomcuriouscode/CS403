@@ -325,7 +325,7 @@ inline vector<Eigen::Vector2f> GenDiscDynWind (Eigen::Vector2f v_0, int subdivis
 */
 bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float w,
 					vector< ObstacleInfo > &out_pointmap, 
-					ObstacleInfo out_closest)
+					ObstacleInfo &out_closest)
 {
 	bool obstacle = false; // true if not obstacle free
 	float min_f = numeric_limits<float>::max(); // keep track of min free path len
