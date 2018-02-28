@@ -48,7 +48,7 @@ bool CheckPointCallback (compsci403_assignment4::CheckPointSrv::Request &req,
 	}
 
 	return true;
-}
+} // end CheckPointCallback
 
 bool GetFreePathCallback (compsci403_assignment4::GetFreePathSrv::Request &req,
 													compsci403_assignment4::GetFreePathSrv::Response &res)
@@ -95,7 +95,7 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 	g_TranslatedPC = translated_pc; // set global for part 4. gross, but necessary.
 
 	g_ObstaclesPub.publish(res);
-}
+} // emd ScanOccurredCallback
 
 bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &req,
 													 	compsci403_assignment4::GetCommandVelSrv::Response &res)

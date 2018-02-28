@@ -214,12 +214,12 @@ visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointClou
 		m.color.g = 1.f;
 		m.color.b = 0.f;
 
-		// convert all_points.points to 
+		// convert all_points.points to point64
 		for (vector<geometry_msgs::Point32>::const_iterator it = all_pts.points.begin(); it != all_pts.points.end(); it ++)
 		{
 			geometry_msgs::Point p64; 
-			p64.x = (double) it->x;
-			p64.y = (double) it->y;
+			p64.x = static_cast<double>(it->x);
+			p64.y = static_cast<double>(it->y);
 			p64.z = 0.0f;
 			m.points.push_back(p64);
 		}
@@ -246,8 +246,8 @@ visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointClou
 		{
 			geometry_msgs::Point32 p = it->point();
 			geometry_msgs::Point p64;
-			p64.x = (double) p.x;
-			p64.y = (double) p.y;
+			p64.x = static_cast<double>(p.x);
+			p64.y = static_cast<double>(p.y);
 			p64.z = 0.0f;
 			remove_if(arr.markers[0].points.begin(), arr.markers[0].points.end(), 
 								[p64](geometry_msgs::Point &otherp){return otherp.x == p64.x && otherp.y == p64.y;});
