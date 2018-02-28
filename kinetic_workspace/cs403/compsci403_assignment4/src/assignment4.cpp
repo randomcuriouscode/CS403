@@ -120,12 +120,13 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 	{ // iterate over each velocity in discrete window
 		bool obstacle = t_helpers::ObstacleExist(translated_pc, it_wind->x(), it_wind->y(), obstacles, closest_pt); // true if not obstacle free
 
-		for (auto it_ob = obstacles.begin(); it_ob != obstacles.end(); it_ob ++)
-		{
-			if (it_ob->f() >= S_MAX) //check stopping distance
-			{	// admissible, compute score, set best_vel, best_score if score < best_score
+		auto v_admissible = find_if(obstacles.begin(), obstacles.end(), 
+			[](t_helpers::ObstacleInfo &obstacle){
+			return obstacle.f() < S_MAX;
+		});
 
-			}
+		if (v_admissible == end(obstacles))
+		{ // velocity is admissible
 		}
 	}
 
