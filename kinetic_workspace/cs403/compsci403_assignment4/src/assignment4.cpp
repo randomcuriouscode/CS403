@@ -57,8 +57,8 @@ bool GetFreePathCallback (compsci403_assignment4::GetFreePathSrv::Request &req,
 	// laser scan is already in the reference frame of the robot, just convert it to a pointcloud
 	t_helpers::LaserScanToPointCloud(req.laser_scan, pc); 
 
-	vector< pointdistpair > obstacles;
-	pointdistpair closest_pt;
+	vector< t_helpers::ObstacleInfo > obstacles;
+	t_helpers::ObstacleInfo closest_pt;
 	bool obstacle = t_helpers::ObstacleExist(pc, req.v, req.w, obstacles, closest_pt); // true if not obstacle free
 
 	// publish to visualization_marker_array
@@ -66,9 +66,9 @@ bool GetFreePathCallback (compsci403_assignment4::GetFreePathSrv::Request &req,
 
 	if (obstacle) // at least one obstacle was found
 	{
-		ROS_DEBUG("GetFreePathCallback: At least 1 obstacle: %f", closest_pt.second);
+		ROS_DEBUG("GetFreePathCallback: At least 1 obstacle: %f", closest_pt.f());
 		res.is_obstacle = true;
-		res.free_path_length = closest_pt.second;
+		res.free_path_length = closest_pt.f();
 	}
 	else // no obstacles along the path
 	{
@@ -108,35 +108,28 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 
 	sensor_msgs::PointCloud translated_pc = g_TranslatedPC;
 	
-	vector< pointdistpair > obstacles;
-	pointdistpair closest_pt;
+	vector< t_helpers::ObstacleInfo > obstacles;
+	t_helpers::ObstacleInfo closest_pt;
 
-	float dont_care;
-	bool obstacle = t_helpers::ObstacleExist(translated_pc, req.v_0, req.w_0, &dont_care);
-	
-	if (obstacle)
-	{	
-		vector<Eigen::Vector2f> disc_window = t_helpers::GenDiscDynWind(Eigen::Vector2f(req.v_0, req.w_0), DISCRETIZATIONS);
-		Eigen::Vector2f best_vel;
-		float best_score = numeric_limits<float>::min();
+	vector< t_helpers::ObstacleInfo > obstacles_initial;
+	t_helpers::ObstacleInfo closest_initial; 
 
-		for (auto it = disc_window.begin(); it != disc_window.end(); it++)
-		{ // iterate over each val in discrete window.
-			bool obstacle = t_helpers::ObstacleExist(translated_pc, it->x(), it->y(), obstacles, closest_pt); // true if not obstacle free
-			float f = closest_pt.second;
-		}
+	bool obstacle = t_helpers::ObstacleExist(translated_pc, req.v_0, req.w_0, obstacles_initial, closest_initial);
 
-		ROS_DEBUG("GetCommandVelCallback: C_v: %f, C_w: %f, best_score: %f", 
-			best_vel.x(), best_vel.y(), best_score);
+	vector<Eigen::Vector2f> disc_window = t_helpers::GenDiscDynWind(Eigen::Vector2f(req.v_0, req.w_0), DISCRETIZATIONS);
+	Eigen::Vector2f best_vel;
+	float best_score = numeric_limits<float>::min();
 
-		res.C_v = best_vel.x();
-		res.C_w = best_vel.y();
+	for (auto it = disc_window.begin(); it != disc_window.end(); it++)
+	{ // iterate over each val in discrete window.
+		obstacle = t_helpers::ObstacleExist(translated_pc, it->x(), it->y(), obstacles, closest_pt); // true if not obstacle free
 	}
-	else // no obstacles
-	{ // robot can continue on its merry way
-		res.C_v = req.v_0;
-		res.C_w = req.w_0;
-	}
+
+	ROS_DEBUG("GetCommandVelCallback: C_v: %f, C_w: %f, best_score: %f", 
+		best_vel.x(), best_vel.y(), best_score);
+
+	res.C_v = best_vel.x();
+	res.C_w = best_vel.y();
 
 	g_TranslatedPC = sensor_msgs::PointCloud(); // reset the cached pointcloud
 	return true;

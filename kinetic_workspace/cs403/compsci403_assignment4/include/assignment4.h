@@ -45,6 +45,62 @@ const Eigen::MatrixXf M_TRANSLATION = (Eigen::MatrixXf(3,1) << .145f, 0.f, 0.23f
 namespace t_helpers
 {
 
+class ObstacleInfo
+{
+
+private:
+	geometry_msgs::Point32 p_point;
+	float p_f;
+	float p_m;
+	float p_final_angle;
+
+public:
+	ObstacleInfo(geometry_msgs::Point32 p, float f_p, float m, float f_ang) : 
+		p_point(p), p_f(f_p), p_m(m), p_final_angle(f_ang) {}
+
+	ObstacleInfo() = default;
+
+	void setpoint(geometry_msgs::Point32 p)
+	{
+		p_point = p;
+	}
+
+	void setf(float f)
+	{
+		p_f = f;
+	}
+
+	void setmargin(float m)
+	{
+		p_m = m;
+	}
+
+	void setfinal_angle(float f_ang)
+	{
+		p_final_angle = f_ang;
+	}
+
+	geometry_msgs::Point32 point()
+	{
+		return p_point;
+	}
+
+	float f()
+	{
+		return p_f;
+	}
+
+	float margin()
+	{
+		return p_m;
+	}
+
+	float final_angle()
+	{
+		return p_final_angle;
+	}
+};
+
 /*
 	@param p 2x1 Vector input point
 	@param v velocity scalar
@@ -137,7 +193,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f)
 }
 
 visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointCloud all_pts, 
-																							const vector< pointdistpair > obstacle_pts,
+																							vector< ObstacleInfo > obstacle_pts,
 																							const string frame_id  )
 {
 	visualization_msgs::MarkerArray arr;
@@ -186,9 +242,9 @@ visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointClou
 		m.color.g = 0.f;
 		m.color.b = 0.f;
 
-		for (vector< pointdistpair >::const_iterator it = obstacle_pts.begin(); it != obstacle_pts.end(); it ++)
+		for (vector< ObstacleInfo >::iterator it = obstacle_pts.begin(); it != obstacle_pts.end(); it ++)
 		{
-			const geometry_msgs::Point32 &p = it->first;
+			geometry_msgs::Point32 p = it->point();
 			geometry_msgs::Point p64;
 			p64.x = (double) p.x;
 			p64.y = (double) p.y;
@@ -268,8 +324,8 @@ inline vector<Eigen::Vector2f> GenDiscDynWind (Eigen::Vector2f v_0, int subdivis
 	@param out_margin output margin
 */
 bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float w,
-					vector< pointdistpair > &out_pointmap, 
-					pointdistpair &out_closest, float *out_margin, float *out_finangle)
+					vector< ObstacleInfo > &out_pointmap, 
+					ObstacleInfo out_closest)
 {
 	bool obstacle = false; // true if not obstacle free
 	float min_f = numeric_limits<float>::max(); // keep track of min free path len
@@ -285,12 +341,12 @@ bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float 
 		float temp_margin;
 		float temp_finangle;
 		bool temp_obstacle = PointIsObstacle(Eigen::Vector2f(it->x, it->y), 
-																					v, w, &temp_f, &temp_margin, &temp_finangle);
+																		v, w, &temp_f, &temp_margin, &temp_finangle);
 		if (temp_obstacle) // found an obstacle
 		{
 			obstacle = true;
 
-			out_pointmap.push_back(pointdistpair(*it, temp_f)); // push to output vector
+			out_pointmap.push_back(ObstacleInfo(*it, temp_f, temp_margin, temp_finangle)); // push to output vector
 
 			if (temp_f < min_f) // obstacle is closer than current closest
 			{
@@ -306,10 +362,10 @@ bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float 
 	if (obstacle) // at least one obstacle was found
 	{
 		ROS_DEBUG("ObstacleExist: At least 1 obstacle: %f", min_f);
-		out_closest.first = closest_pt;
-		out_closest.second = min_f;
-		*out_margin = min_margin;
-		*out_finangle = min_finangle;
+		out_closest.setpoint(closest_pt);
+		out_closest.setf(min_f);
+		out_closest.setmargin(min_margin);
+		out_closest.setfinal_angle(min_finangle);
 		return true;
 	}
 	else // no obstacles along the path
@@ -319,32 +375,19 @@ bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float 
 	}
 }
 
-bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float w,
-					vector< pointdistpair > &out_pointmap, 
-					pointdistpair &out_closest)
-{
-	float finangle_dontcare;
-	float margin_dontcare;
-
-	return ObstacleExist(pc, v, w, out_pointmap, out_closest, &margin_dontcare, &finangle_dontcare);
-}
-
 /*
 	Convenience function to output only the free path distance, discarding other output.
 */
 bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float w, float *out_f)
 {
-	vector< pointdistpair > dont_care;
-	pointdistpair closest_pt;
-	float finangle_dontcare;
-	float margin_dontcare;
+	vector< ObstacleInfo > dont_care;
+	ObstacleInfo closest_pt;
 
-	bool obstacle = ObstacleExist(pc, v, w, dont_care, closest_pt, 
-		&margin_dontcare, &finangle_dontcare);
+	bool obstacle = ObstacleExist(pc, v, w, dont_care, closest_pt);
 
 	if (obstacle)
 	{
-		*out_f = closest_pt.second;
+		*out_f = closest_pt.f();
 	}
 
 	return obstacle;
