@@ -262,7 +262,8 @@ visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointClou
 
 /*
 	Generate a dynamic discretized set of viable (v,w) values given initial velocity
-	and how many subdivisions to make. Subdivisions should be a square value.
+	and how many subdivisions to make. Returns on average subdivisions^2 grid values.
+	Only returns admissible velocities within critical velocities.
 	@param v_0 input linear/angular velocity
 	@param subdivisions amount of discretizations per row and per col.
 	@returns a list of discretized possible linear/angular velocity values
@@ -329,8 +330,8 @@ bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float 
 {
 	bool obstacle = false; // true if not obstacle free
 	float min_f = numeric_limits<float>::max(); // keep track of min free path len
-	float min_margin;
-	float min_finangle;
+	float min_margin = numeric_limits<float>::max();
+	float min_finangle = numeric_limits<float>::max();
 
 	geometry_msgs::Point32 closest_pt;
 

@@ -108,21 +108,39 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 
 	sensor_msgs::PointCloud translated_pc = g_TranslatedPC;
 	
-	vector< t_helpers::ObstacleInfo > obstacles;
-	t_helpers::ObstacleInfo closest_pt;
+	vector< t_helpers::ObstacleInfo > obstacles; // computed obstacles for dyn window
+	t_helpers::ObstacleInfo closest_pt; // closest point for dyn window
 
-	vector< t_helpers::ObstacleInfo > obstacles_initial;
-	t_helpers::ObstacleInfo closest_initial; 
+	vector< t_helpers::ObstacleInfo > obstacles_initial; // obstacles of initial vel
+	t_helpers::ObstacleInfo closest_initial; // closest initial obstacle
 
 	bool obstacle = t_helpers::ObstacleExist(translated_pc, req.v_0, req.w_0, obstacles_initial, closest_initial);
 
 	vector<Eigen::Vector2f> disc_window = t_helpers::GenDiscDynWind(Eigen::Vector2f(req.v_0, req.w_0), DISCRETIZATIONS);
+	
 	Eigen::Vector2f best_vel;
 	float best_score = numeric_limits<float>::min();
 
-	for (auto it = disc_window.begin(); it != disc_window.end(); it++)
-	{ // iterate over each val in discrete window.
-		obstacle = t_helpers::ObstacleExist(translated_pc, it->x(), it->y(), obstacles, closest_pt); // true if not obstacle free
+	for (auto it_orig = obstacles_initial.begin(); it_orig != obstacles_initial.end();
+				it_orig ++)
+		{
+			if (it_orig->f() >= S_MAX) // check stopping distance
+			{ // admissible, compute score, set best_vel, best score if score < best_score
+
+			}
+		}
+
+	for (auto it_wind = disc_window.begin(); it_wind != disc_window.end(); it_wind++)
+	{ // iterate over each val in discrete window for both the original and grid val
+		obstacle = t_helpers::ObstacleExist(translated_pc, it_wind->x(), it_wind->y(), obstacles, closest_pt); // true if not obstacle free
+
+		for (auto it_ob = obstacles.begin(); it_ob != obstacles.end(); it_ob ++)
+		{
+			if (it_ob->f() >= S_MAX) //check stopping distance
+			{	// admissible, compute score, set best_vel, best_score if score < best_score
+
+			}
+		}
 	}
 
 	ROS_DEBUG("GetCommandVelCallback: C_v: %f, C_w: %f, best_score: %f", 
