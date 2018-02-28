@@ -127,6 +127,7 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 
 		if (v_admissible == end(obstacles))
 		{ // velocity is admissible
+			
 		}
 	}
 

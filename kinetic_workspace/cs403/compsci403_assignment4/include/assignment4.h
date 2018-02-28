@@ -101,6 +101,16 @@ public:
 	}
 };
 
+float ConstrainAngle(float x)
+{
+	x = fmod(x, 360);
+	if (x < 0)
+		x += 360;
+
+	return x;
+}
+
+
 /*
 	@param p 2x1 Vector input point
 	@param v velocity scalar
@@ -165,9 +175,24 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f, float *o
 		ROS_DEBUG("PointIsObstacle: p.x:%f, p.y:%f, pco: %f, pcl: %f, lco: %f, f: %f", 
 			p.x(), p.y(), pco, pcl, lco, f);
 
+		// calculate angle error margin from straight liine angle and predicted angle
+
+		Eigen::Vector2f op_trans = p + p; // translate vectors to p to calc angle
+		Eigen::Vector2f cp_trans = p + cp;
+
+		float phi = acos((cp_trans).dot(op_trans) / (cp_trans.norm() * op_trans.norm()));
+
+		if (phi >= 0)
+		{
+			*out_finangle = lco - phi;
+		}
+		else
+		{
+			*out_finangle = ConstrainAngle(lco + phi);
+		}
+
 		*out_f = f;
 		*out_margin = p_dist_from_robot;
-		*out_finangle = lco;
 
 		return true; // free path obstacle found along curve
 		} // end if p_dist_from_robot < R_ROBOT
