@@ -62,6 +62,7 @@ private:
 	float p_m;
 	float p_final_angle;
 	float p_r;
+	Eigen::Vector2f p_c;
 
 public:
 	ObstacleInfo(geometry_msgs::Point32 p, float f_p, float m, float f_ang) : 
@@ -96,6 +97,11 @@ public:
 		p_r = r;
 	}
 
+	void setc(Eigen::Vector2f c)
+	{
+		p_c = c;
+	}
+
 	geometry_msgs::Point32 point() const
 	{
 		return p_point;
@@ -119,6 +125,11 @@ public:
 	float r() const
 	{
 		return p_r;
+	}
+
+	Eigen::Vector2f c() const
+	{
+		return p_c;
 	}
 };
 
@@ -216,6 +227,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 		obstacle.setf(f);
 		obstacle.setmargin(p_dist_from_robot);
 		obstacle.setr(r);
+		obstacle.setc(c);
 
 		return true; // free path obstacle found along curve
 		} // end if p_dist_from_robot < R_ROBOT
@@ -468,9 +480,19 @@ float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstac
 
 	if (velocity.y()) // nonlinear, we calculate distance according to r
 	{
-
+		// find point that is not obstacle that has closest distance to arc r + R or r - R
+		float min_d = numeric_limits<float>::max();
+		for (auto all_it= all_points.begin(); all_it != all_points.end(); all_it ++)
+		{
+			if (find_if(obstacles.begin(), obstacles.end(), [all_it](ObstacleInfo ob){
+				return ob.point().x == all_it->x && ob.point().y == all_it->y;
+			}) != obstacles.end())
+			{	// point found in all points that is not an obstacle, calc distance
+				Eigen::Vector2f pt (all_it->x, all_it->y);
+			}
+		}
 	}
-	else // linear, we calculate distance
+	else // linear, we calculate distance according to line segment  by [0,f] and R_ROBOT
 	{
 
 	}
