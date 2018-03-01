@@ -151,6 +151,15 @@ int main(int argc, char **argv) {
   {
   	DISCRETIZATIONS = atoi(argv[1]) > 0 ? atoi(argv[1]) : DISCRETIZATIONS;
   	ROS_INFO("DISCRETIZATIONS set to %i", DISCRETIZATIONS);
+
+  	if (argc > 3)
+  	{
+  		ALPHA = atof(argv[2]) >= 0 ? atof(argv[2]) : ALPHA;
+  		BETA = atof(argv[3]) >= 0 ? atof(argv[3]) : BETA;
+  		GAMMA = atof(argv[4]) >= 0 ? atof(argv[4]) : GAMMA;
+
+  		ROS_INFO("Set ALPHA: %f, BETA: %f, GAMMA: %f", ALPHA, BETA, GAMMA);
+  	}
   }
   else
   {

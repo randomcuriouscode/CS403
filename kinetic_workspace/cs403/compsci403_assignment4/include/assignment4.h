@@ -44,6 +44,9 @@ const Eigen::Matrix3f M_ROTATION = (Eigen::Matrix3f() << 1.f, 0.f, 0.f,
 
 const Eigen::MatrixXf M_TRANSLATION = (Eigen::MatrixXf(3,1) << .145f, 0.f, 0.23f).finished();
 
+static float ALPHA = -5.0f;
+static float BETA = 10.0f;
+static float GAMMA = 1.0f;
 
 namespace t_helpers
 {
@@ -56,12 +59,15 @@ private:
 	float p_f;
 	float p_m;
 	float p_final_angle;
+	float p_r;
 
 public:
 	ObstacleInfo(geometry_msgs::Point32 p, float f_p, float m, float f_ang) : 
 		p_point(p), p_f(f_p), p_m(m), p_final_angle(f_ang) {}
 
-	ObstacleInfo() = default;
+	ObstacleInfo(const ObstacleInfo &i) = default; // copy constructor
+
+	ObstacleInfo() = default; // default constructor
 
 	void setpoint(geometry_msgs::Point32 p)
 	{
@@ -83,6 +89,11 @@ public:
 		p_final_angle = f_ang;
 	}
 
+	void setr(float r)
+	{
+		p_r = r;
+	}
+
 	geometry_msgs::Point32 point()
 	{
 		return p_point;
@@ -101,6 +112,11 @@ public:
 	float final_angle()
 	{
 		return p_final_angle;
+	}
+
+	float r()
+	{
+		return p_r;
 	}
 };
 
@@ -187,6 +203,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 
 		float phi = acos((cp_trans).dot(op_trans) / (cp_trans.norm() * op_trans.norm()));
 
+		// set output obstacle info.
 		if (phi >= 0)
 		{
 			obstacle.setfinal_angle(lco-phi);
@@ -198,6 +215,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 
 		obstacle.setf(f);
 		obstacle.setmargin(p_dist_from_robot);
+		obstacle.setr(r);
 
 		return true; // free path obstacle found along curve
 		} // end if p_dist_from_robot < R_ROBOT
@@ -405,6 +423,7 @@ bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float 
 		out_closest.setf(min_f);
 		out_closest.setmargin(min_margin);
 		out_closest.setfinal_angle(min_finangle);
+		out_closest.setr(out_pointmap[0].r());
 		return true;
 	}
 	else // no obstacles along the path
