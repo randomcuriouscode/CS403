@@ -209,6 +209,7 @@ void OdometryOccurredCallback(const nav_msgs::Odometry &odom)
 	g_v.y() = odom.twist.twist.angular.z;
 	g_robotPos.x() = odom.pose.pose.position.x;
 	g_robotPos.y() = odom.pose.pose.position.y;
+	ROS_DEBUG("OdometryOccurredCallback: set to: v: %f, w: %f, p_x: %f, p_y: %f", g_v.x(), g_v.y(), g_robotPos.x(), g_robotPos.y());
 }
 
 int main(int argc, char **argv) {
