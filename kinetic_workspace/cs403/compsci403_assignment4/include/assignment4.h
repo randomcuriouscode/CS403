@@ -321,7 +321,7 @@ visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointClou
 	Guaranteed to return a window containing at least v_0.
 	@param v_0 input linear/angular velocity
 	@param subdivisions amount of discretizations per row and per col.
-	@returns a list of discretized possible linear/angular velocity values
+	@returns a list of discretized possible linear/angular velocity values [v,w]
 */
 inline vector<Eigen::Vector2f> GenDiscDynWind (Eigen::Vector2f v_0, int subdivisions)
 { // v_0.x = linear vel, v_0.y = angular vel
@@ -449,6 +449,25 @@ bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float 
 	}
 
 	return obstacle;
+}
+
+/*
+	Calculate the score of an obstacle given velocity.
+	@param velocity the velocity vector [v,w]
+	@param obstacle Info about the obstacle.
+*/
+float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstacle)
+{
+	float score = 0.0f;
+
+
+
+	if (velocity.y()) // nonlinear, we calculate distance according to r
+	{
+
+	}
+
+	return score;
 }
 
 /*
