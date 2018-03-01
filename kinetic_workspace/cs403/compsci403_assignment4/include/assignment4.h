@@ -53,6 +53,22 @@ static float SIGMA = 1.0f; // normalization
 namespace t_helpers
 {
 
+// Hash function for Eigen matrix and vector.
+// The code is from `hash_combine` function of the Boost library. See
+// http://www.boost.org/doc/libs/1_55_0/doc/html/hash/reference.html#boost.hash_combine .
+struct point32_hash : std::unary_function<geometry_msgs::Point32, size_t> {
+  std::size_t operator()(geometry_msgs::Point32 const& p) const {
+    // Note that it is oblivious to the storage order of Eigen matrix (column- or
+    // row-major). It will give you the same hash value for two different matrices if they
+    // are the transpose of each other in different storage order.
+    size_t seed = 0;
+    seed ^= std::hash<float>()(p.x) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= std::hash<float>()(p.y) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= std::hash<float>()(p.z) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    return seed;
+  }
+};
+
 class ObstacleInfo
 {
 
@@ -138,9 +154,7 @@ float ConstrainAngle(float x)
 	@param p 2x1 Vector input point
 	@param v velocity scalar
 	@param w angular velocity scalar
-	@param out_f output free path scalar
-	@param out_margin output margin between free path center and point
-	@param out_finangle output final angle
+	@param obstacle output obstacle info
 */
 bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle)
 {
@@ -438,7 +452,7 @@ bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float 
 /*
 	Convenience function to output only the free path distance, discarding other output.
 */
-bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float w, float *out_f)
+bool ObstacleExist(const sensor_msgs::PointCloud &pc, const float v, const float w, float *out_f)
 {
 	vector< ObstacleInfo > dont_care;
 	ObstacleInfo closest_pt;
@@ -458,7 +472,8 @@ bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float 
 	@param velocity the velocity vector [v,w]
 	@param obstacle Info about the obstacle.
 */
-float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstacle)
+float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstacle, 
+	const vector<geometry_msgs::Point32> &not_obstacles)
 {
 	float score = 0.0f;
 
@@ -468,6 +483,10 @@ float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstac
 	score += GAMMA * velocity.x(); // linear velocity is the only one score cares about
 
 	if (velocity.y()) // nonlinear, we calculate distance according to r
+	{
+
+	}
+	else // linear, we calculate distance
 	{
 
 	}
