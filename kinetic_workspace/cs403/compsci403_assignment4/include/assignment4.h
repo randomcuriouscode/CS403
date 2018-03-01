@@ -44,9 +44,11 @@ const Eigen::Matrix3f M_ROTATION = (Eigen::Matrix3f() << 1.f, 0.f, 0.f,
 
 const Eigen::MatrixXf M_TRANSLATION = (Eigen::MatrixXf(3,1) << .145f, 0.f, 0.23f).finished();
 
-static float ALPHA = -5.0f;
-static float BETA = 10.0f;
-static float GAMMA = 1.0f;
+// score calculation weights
+static float ALPHA = -5.0f; // angle weight
+static float BETA = 10.0f; // distance weight
+static float GAMMA = 1.0f; // velocity weight
+static float SIGMA = 1.0f; // normalization
 
 namespace t_helpers
 {
@@ -99,22 +101,22 @@ public:
 		return p_point;
 	}
 
-	float f()
+	float f() const
 	{
 		return p_f;
 	}
 
-	float margin()
+	float margin() const
 	{
 		return p_m;
 	}
 
-	float final_angle()
+	float final_angle() const
 	{
 		return p_final_angle;
 	}
 
-	float r()
+	float r() const
 	{
 		return p_r;
 	}
@@ -460,7 +462,10 @@ float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstac
 {
 	float score = 0.0f;
 
+	// add angle() score
 
+	score += ALPHA * obstacle.final_angle();
+	score += GAMMA * velocity.x(); // linear velocity is the only one score cares about
 
 	if (velocity.y()) // nonlinear, we calculate distance according to r
 	{
