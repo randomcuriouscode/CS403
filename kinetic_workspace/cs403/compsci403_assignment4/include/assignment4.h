@@ -472,23 +472,30 @@ float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstac
 	const vector<ObstacleInfo> &obstacles, const vector<geometry_msgs::Point32> &all_points)
 {
 	float score = 0.0f;
+	float min_d = numeric_limits<float>::max();
 
-	// add angle() score
-
-	score += ALPHA * obstacle.final_angle();
+	score += ALPHA * obstacle.final_angle(); // angle() score
 	score += GAMMA * velocity.x(); // linear velocity is the only one score cares about
 
 	if (velocity.y()) // nonlinear, we calculate distance according to r
 	{
 		// find point that is not obstacle that has closest distance to arc r + R or r - R
-		float min_d = numeric_limits<float>::max();
 		for (auto all_it= all_points.begin(); all_it != all_points.end(); all_it ++)
 		{
 			if (find_if(obstacles.begin(), obstacles.end(), [all_it](ObstacleInfo ob){
 				return ob.point().x == all_it->x && ob.point().y == all_it->y;
 			}) != obstacles.end())
 			{	// point found in all points that is not an obstacle, calc distance
-				Eigen::Vector2f pt (all_it->x, all_it->y);
+				Eigen::Vector2f p (all_it->x, all_it->y);
+				Eigen::Vector2f p_prime = p - obstacle.c();
+				float inner_dist = abs(p_prime.norm() - (obstacle.r() - R_ROBOT));
+				float outer_dist = abs(p_prime.norm() - (obstacle.r() + R_ROBOT));
+				float dist = min(inner_dist, outer_dist);
+
+				if (dist < min_d)
+				{
+					min_d = dist; // set minimum to local minimum distance
+				}
 			}
 		}
 	}
@@ -496,6 +503,9 @@ float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstac
 	{
 
 	}
+
+	score += BETA * min_d;
+	score *= SIGMA;
 
 	return score;
 }
