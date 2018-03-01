@@ -474,7 +474,7 @@ float DistFromSegment(Eigen::Vector2f p, Eigen::Vector2f start, Eigen::Vector2f 
 
 	float comp_a_b = a.dot(b) / a.norm(); // scalar projection
 
-	float d1 = pow(b.norm(), 2.0f) - pow(comp_a_b, 2.0f);
+	float d1 = sqrt(pow(b.norm(), 2.0f) - pow(comp_a_b, 2.0f));
 
 	// calculate distance of p from end points
 	float d2 = (p - start).norm();
