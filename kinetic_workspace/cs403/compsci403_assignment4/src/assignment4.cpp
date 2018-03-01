@@ -123,7 +123,7 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 
 		auto v_admissible = find_if(obstacles.begin(), obstacles.end(), 
 			[](t_helpers::ObstacleInfo &obstacle){
-			return obstacle.f() <= S_MAX; // admissible if free path leq max stopping dist
+			return obstacle.f() >= S_MAX; // admissible if free path geq max stopping dist
 		}); 
 
 		if (v_admissible == end(obstacles))

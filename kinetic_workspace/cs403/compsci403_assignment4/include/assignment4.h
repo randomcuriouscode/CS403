@@ -464,9 +464,32 @@ bool ObstacleExist(const sensor_msgs::PointCloud &pc, const float v, const float
 }
 
 /*
+	Calculates the distance of p from line segment defined by [start,end]
+*/
+float DistFromSegment(Eigen::Vector2f p, Eigen::Vector2f start, Eigen::Vector2f end)
+{
+	// calculate scalar projection of point onto line segment
+	Eigen::Vector2f b = p - start;
+	Eigen::Vector2f a = end - start;
+
+	float comp_a_b = a.dot(b) / a.norm(); // scalar projection
+
+	float d1 = pow(b.norm(), 2.0f) - pow(comp_a_b, 2.0f);
+
+	// calculate distance of p from end points
+	float d2 = (p - start).norm();
+	float d3 = (p - end).norm();
+
+	return min(d1, min(d2, d3)); // return minimum of the distances
+}
+
+/*
 	Calculate the score of an obstacle given velocity.
+	Objective: minimize angle, maximize distance and velocity.
 	@param velocity the velocity vector [v,w]
 	@param obstacle Info about the obstacle.
+	@param obstacles vector of all obstacles
+	@param all_points all points in the pointcloud
 */
 float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstacle, 
 	const vector<ObstacleInfo> &obstacles, const vector<geometry_msgs::Point32> &all_points)
@@ -475,34 +498,45 @@ float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstac
 	float min_d = numeric_limits<float>::max();
 
 	score += ALPHA * obstacle.final_angle(); // angle() score
-	score += GAMMA * velocity.x(); // linear velocity is the only one score cares about
+	score += GAMMA * velocity.x(); // linear velocity is the only factor
 
-	if (velocity.y()) // nonlinear, we calculate distance according to r
+
+	// find closest distance of point that is not obstacle for distance avoidance
+	for (auto all_it= all_points.begin(); all_it != all_points.end(); all_it ++)
 	{
-		// find point that is not obstacle that has closest distance to arc r + R or r - R
-		for (auto all_it= all_points.begin(); all_it != all_points.end(); all_it ++)
-		{
-			if (find_if(obstacles.begin(), obstacles.end(), [all_it](ObstacleInfo ob){
-				return ob.point().x == all_it->x && ob.point().y == all_it->y;
-			}) != obstacles.end())
-			{	// point found in all points that is not an obstacle, calc distance
+		if (find_if(obstacles.begin(), obstacles.end(), [all_it](ObstacleInfo ob){
+			return ob.point().x == all_it->x && ob.point().y == all_it->y;
+		}) != obstacles.end())
+		{	// point found in all points that is not an obstacle, calc distance
+			float dist;
+			if (velocity.y()) // nonlinear, distance according to arc r + R or r - R
+			{
+
 				Eigen::Vector2f p (all_it->x, all_it->y);
 				Eigen::Vector2f p_prime = p - obstacle.c();
 				float inner_dist = abs(p_prime.norm() - (obstacle.r() - R_ROBOT));
 				float outer_dist = abs(p_prime.norm() - (obstacle.r() + R_ROBOT));
-				float dist = min(inner_dist, outer_dist);
+				dist = min(inner_dist, outer_dist);
+			}
+			else // linear, distance according to line segment  by [0,f] and R_ROBOT
+			{
+				// calculate scalar projection of point onto line segment 
+				Eigen::Vector2f p (all_it->x, all_it->y);
+				float d1 = DistFromSegment(p, Eigen::Vector2f(0, R_ROBOT), 
+				 	Eigen::Vector2f(obstacle.f(), R_ROBOT));
+				float d2 = DistFromSegment(p, Eigen::Vector2f(0, -R_ROBOT), 
+					Eigen::Vector2f(obstacle.f(), -R_ROBOT));
 
-				if (dist < min_d)
-				{
-					min_d = dist; // set minimum to local minimum distance
-				}
+				dist = min(d1, d2);
+			}
+
+			if (dist < min_d)
+			{
+				min_d = dist; // set minimum to local minimum distance
 			}
 		}
 	}
-	else // linear, we calculate distance according to line segment  by [0,f] and R_ROBOT
-	{
-
-	}
+	
 
 	score += BETA * min_d;
 	score *= SIGMA;
