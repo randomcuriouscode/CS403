@@ -5,9 +5,14 @@
 
 TEST(TestSuite, test_GenDiscDynWind)
 {
-	Eigen::Vector2f test_velocity (.5f, 1.5f);
+	Eigen::Vector2f test_velocity (0, 0);
 
 	auto discwind = t_helpers::GenDiscDynWind(test_velocity, 10);
+
+	for (auto it = discwind.begin(); it != discwind.end() ; it++)
+	{
+		std::cerr << "[" << *it << "]" << "" << std::endl;
+	}
 
 	ASSERT_GE(discwind.size(), 100);
 

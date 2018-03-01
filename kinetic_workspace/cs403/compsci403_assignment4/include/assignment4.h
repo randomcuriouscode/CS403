@@ -139,9 +139,15 @@ public:
 */
 float ConstrainAngle(float x)
 {
-	x = fmod(x, M_PI);
-	if (x < 0)
-		x += M_PI;
+	while (x < -M_PI)
+	{
+		x += 2 * M_PI;
+	}
+
+	while (x > M_PI)
+	{
+		x -= 2 * M_PI;
+	}
 
 	return x;
 }
@@ -216,14 +222,8 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 		float phi = acos((cp_trans).dot(op_trans) / (cp_trans.norm() * op_trans.norm()));
 
 		// set output obstacle info.
-		if (phi >= 0)
-		{
-			obstacle.setfinal_angle(lco-phi);
-		}
-		else
-		{
-			obstacle.setfinal_angle(ConstrainAngle(lco + phi));
-		}
+		obstacle.setfinal_angle(ConstrainAngle(lco-phi));
+
 
 		obstacle.setf(f);
 		obstacle.setmargin(p_dist_from_robot);
@@ -544,7 +544,7 @@ float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstac
 	score += BETA * closest_pt.f();
 	score *= SIGMA;
 
-	ROS_DEBUG("CalculateScore: returning score: %f", score);
+	ROS_DEBUG("CalculateScore: returning score: %f, for f:%f, v: %f, angle: %f", score, closest_pt.f(), velocity.x(), obstacle.final_angle());
 
 	return score;
 }

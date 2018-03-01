@@ -211,7 +211,7 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 
 void OdometryOccurredCallback(const nav_msgs::Odometry &odom)
 {	// odometry is published before laser scan, save it into a global
-	g_v.x() = pow(odom.twist.twist.linear.x, 2.0f) + pow(odom.twist.twist.linear.y, 2.0f);
+	g_v.x() = sqrt(pow(odom.twist.twist.linear.x, 2.0f) + pow(odom.twist.twist.linear.y, 2.0f));
 	g_v.y() = odom.twist.twist.angular.z;
 	g_robotPos.x() = odom.pose.pose.position.x;
 	g_robotPos.y() = odom.pose.pose.position.y;
