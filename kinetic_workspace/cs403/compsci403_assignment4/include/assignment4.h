@@ -139,9 +139,9 @@ public:
 */
 float ConstrainAngle(float x)
 {
-	x = fmod(x, 2 * M_PI);
+	x = fmod(x, M_PI);
 	if (x < 0)
-		x += 2 * M_PI;
+		x += M_PI;
 
 	return x;
 }

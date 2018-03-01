@@ -189,7 +189,7 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 			// compute score for each obstacle
 			for (auto it_ob = obstacles.begin(); it_ob != obstacles.end(); it_ob ++)
 			{
-				float score = t_helpers::CalculateScore(*it_wind, *it_ob, obstacles, translated_pc.points);
+				float score = t_helpers::CalculateScore(*it_wind, *it_ob, obstacles, translated_pc.points, closest_pt);
 				if (score > best_score)
 				{
 					best_score = score;
