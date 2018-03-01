@@ -92,15 +92,62 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 
 	t_helpers::ProjectRangeFinderToRobotRef(msg, translated_pc);
 
-	// publish converted points
+	if (g_DrivePub.getNumSubscribers()) // /Cobot/Drive has subscribers
+	{	
+		vector< t_helpers::ObstacleInfo > obstacles; // computed obstacles for dyn window
+		t_helpers::ObstacleInfo closest_pt; // closest point for dyn window
 
-	compsci403_assignment4::ObstacleMsg res;
-	res.header = msg.header;
-	res.obstacle_points = translated_pc.points;
+		vector<Eigen::Vector2f> disc_window = t_helpers::GenDiscDynWind(Eigen::Vector2f(g_v.x(), g_v.y()), DISCRETIZATIONS);
+		
+		Eigen::Vector2f best_vel = Eigen::Vector2f(g_v.x(), g_v.y());
+		float best_score = numeric_limits<float>::min();
 
-	g_TranslatedPC = translated_pc; // set global for part 4. gross, but necessary.
+		for (auto it_wind = disc_window.begin(); it_wind != disc_window.end(); it_wind++)
+		{ // iterate over each velocity in discrete window
+			bool obstacle = t_helpers::ObstacleExist(translated_pc, it_wind->x(), it_wind->y(), obstacles, closest_pt); // true if not obstacle free
 
-	g_ObstaclesPub.publish(res);
+			auto v_admissible = find_if(obstacles.begin(), obstacles.end(), 
+				[](t_helpers::ObstacleInfo &obstacle){
+				return obstacle.f() >= S_MAX; // admissible if free path geq max stopping dist
+			}); 
+
+			if (v_admissible == end(obstacles))
+			{ // velocity is admissible
+				// compute score for each obstacle
+				for (auto it_ob = obstacles.begin(); it_ob != obstacles.end(); it_ob ++)
+				{
+					float score = t_helpers::CalculateScore(*it_wind, *it_ob, obstacles, translated_pc.points);
+					if (score > best_score)
+					{
+						best_score = score;
+						best_vel = *it_wind;
+					}
+				}
+			}
+		}
+
+		ROS_DEBUG("GetCommandVelCallback: C_v: %f, C_w: %f, best_score: %f", 
+			best_vel.x(), best_vel.y(), best_score);
+
+		ROS_DEBUG("Publishing to /Cobot/Drive");
+
+		cobot_msgs::CobotDriveMsg msg;
+		msg.header = translated_pc.header;
+		msg.v = best_vel.x();
+		msg.w = best_vel.w();
+		g_DrivePub.publish(msg);
+	}
+	else
+	{ // no subscribers, assume we are being tested for part 3 or 4
+		// publish converted points to /COMPSCI403/Obstacles
+
+		compsci403_assignment4::ObstacleMsg res;
+		res.header = msg.header;
+		res.obstacle_points = translated_pc.points;
+		g_TranslatedPC = translated_pc; // set global for part 4.
+
+		g_ObstaclesPub.publish(res);
+	}
 } // emd ScanOccurredCallback
 
 bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &req,
