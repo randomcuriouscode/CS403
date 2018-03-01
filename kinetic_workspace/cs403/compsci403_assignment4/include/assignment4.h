@@ -122,23 +122,6 @@ public:
 	}
 };
 
-// Hash function for Eigen matrix and vector.
-// The code is from `hash_combine` function of the Boost library. See
-// http://www.boost.org/doc/libs/1_55_0/doc/html/hash/reference.html#boost.hash_combine .
-struct ObstacleInfo_hash : std::unary_function<ObstacleInfo, size_t> {
-  std::size_t operator()(ObstacleInfo const& o) const {
-    // Note that it is oblivious to the storage order of Eigen matrix (column- or
-    // row-major). It will give you the same hash value for two different matrices if they
-    // are the transpose of each other in different storage order.
-    size_t seed = 0;
-    seed ^= std::hash<float>()(o.point().x) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= std::hash<float>()(o.point().y) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= std::hash<float>()(o.point().z) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    return seed;
-  }
-};
-
-
 /*
 	Constrain an angle between 0, 2pi
 */
@@ -474,7 +457,7 @@ bool ObstacleExist(const sensor_msgs::PointCloud &pc, const float v, const float
 	@param obstacle Info about the obstacle.
 */
 float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstacle, 
-	const vector<geometry_msgs::Point32> &not_obstacles)
+	const vector<ObstacleInfo> &obstacles, const vector<geometry_msgs::Point32> &all_points)
 {
 	float score = 0.0f;
 

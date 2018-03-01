@@ -114,7 +114,7 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 
 	vector<Eigen::Vector2f> disc_window = t_helpers::GenDiscDynWind(Eigen::Vector2f(req.v_0, req.w_0), DISCRETIZATIONS);
 	
-	Eigen::Vector2f best_vel;
+	Eigen::Vector2f best_vel = Eigen::Vector2f(req.v_0, req.w_0);
 	float best_score = numeric_limits<float>::min();
 
 	for (auto it_wind = disc_window.begin(); it_wind != disc_window.end(); it_wind++)
@@ -123,13 +123,21 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 
 		auto v_admissible = find_if(obstacles.begin(), obstacles.end(), 
 			[](t_helpers::ObstacleInfo &obstacle){
-			return obstacle.f() < S_MAX;
+			return obstacle.f() <= S_MAX;
 		});
 
 		if (v_admissible == end(obstacles))
 		{ // velocity is admissible
-			// compute score
-			
+			// compute score for each obstacle
+			for (auto it_ob = obstacles.begin(); it_ob != obstacles.end(); it_ob ++)
+			{
+				float score = t_helpers::CalculateScore(*it_wind, *it_ob, obstacles, translated_pc.points);
+				if (score > best_score)
+				{
+					best_score = score;
+					best_vel = *it_wind;
+				}
+			}
 		}
 	}
 
