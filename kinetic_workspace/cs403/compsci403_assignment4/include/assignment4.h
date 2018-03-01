@@ -53,22 +53,6 @@ static float SIGMA = 1.0f; // normalization
 namespace t_helpers
 {
 
-// Hash function for Eigen matrix and vector.
-// The code is from `hash_combine` function of the Boost library. See
-// http://www.boost.org/doc/libs/1_55_0/doc/html/hash/reference.html#boost.hash_combine .
-struct point32_hash : std::unary_function<geometry_msgs::Point32, size_t> {
-  std::size_t operator()(geometry_msgs::Point32 const& p) const {
-    // Note that it is oblivious to the storage order of Eigen matrix (column- or
-    // row-major). It will give you the same hash value for two different matrices if they
-    // are the transpose of each other in different storage order.
-    size_t seed = 0;
-    seed ^= std::hash<float>()(p.x) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= std::hash<float>()(p.y) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= std::hash<float>()(p.z) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    return seed;
-  }
-};
-
 class ObstacleInfo
 {
 
@@ -112,7 +96,7 @@ public:
 		p_r = r;
 	}
 
-	geometry_msgs::Point32 point()
+	geometry_msgs::Point32 point() const
 	{
 		return p_point;
 	}
@@ -137,6 +121,23 @@ public:
 		return p_r;
 	}
 };
+
+// Hash function for Eigen matrix and vector.
+// The code is from `hash_combine` function of the Boost library. See
+// http://www.boost.org/doc/libs/1_55_0/doc/html/hash/reference.html#boost.hash_combine .
+struct ObstacleInfo_hash : std::unary_function<ObstacleInfo, size_t> {
+  std::size_t operator()(ObstacleInfo const& o) const {
+    // Note that it is oblivious to the storage order of Eigen matrix (column- or
+    // row-major). It will give you the same hash value for two different matrices if they
+    // are the transpose of each other in different storage order.
+    size_t seed = 0;
+    seed ^= std::hash<float>()(o.point().x) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= std::hash<float>()(o.point().y) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= std::hash<float>()(o.point().z) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    return seed;
+  }
+};
+
 
 /*
 	Constrain an angle between 0, 2pi
