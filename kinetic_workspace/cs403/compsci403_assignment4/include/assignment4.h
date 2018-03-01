@@ -533,6 +533,7 @@ float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstac
 
 			if (dist < min_d)
 			{
+				ROS_DEBUG("CalculateScore: min dist: %f, before: %f", dist, min_d);
 				min_d = dist; // set minimum to local minimum distance
 			}
 		}
@@ -541,6 +542,8 @@ float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstac
 
 	score += BETA * min_d;
 	score *= SIGMA;
+
+	ROS_DEBUG("CalculateScore: returning score: %f", score);
 
 	return score;
 }

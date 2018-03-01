@@ -94,6 +94,12 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 
 	if (g_DrivePub.getNumSubscribers()) // /Cobot/Drive has subscribers
 	{	
+		for (auto it = translated_pc.points.begin(); it != translated_pc.points.end(); it++)
+		{	// translate all pointcloud points by current robot position.
+			it->x -= g_robotPos.x();
+			it->y -= g_robotPos.y();
+		}
+
 		vector< t_helpers::ObstacleInfo > obstacles; // computed obstacles for dyn window
 		t_helpers::ObstacleInfo closest_pt; // closest point for dyn window
 
@@ -108,7 +114,7 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 
 			auto v_admissible = find_if(obstacles.begin(), obstacles.end(), 
 				[](t_helpers::ObstacleInfo &obstacle){
-				return obstacle.f() >= S_MAX; // admissible if free path geq max stopping dist
+				return obstacle.f() < S_MAX; // admissible if no free path is less than max stopping dist
 			}); 
 
 			if (v_admissible == end(obstacles))
@@ -126,7 +132,7 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 			}
 		}
 
-		ROS_DEBUG("GetCommandVelCallback: C_v: %f, C_w: %f, best_score: %f", 
+		ROS_DEBUG("ScanOccurredCallback: C_v: %f, C_w: %f, best_score: %f", 
 			best_vel.x(), best_vel.y(), best_score);
 
 		ROS_DEBUG("Publishing to /Cobot/Drive");
