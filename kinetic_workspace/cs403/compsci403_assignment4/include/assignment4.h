@@ -16,6 +16,7 @@
 #include <visualization_msgs/MarkerArray.h>
 
 #include "cobot_msgs/CobotDriveMsg.h"
+#include "nav_msgs/Odometry.h"
 #include "compsci403_assignment4/ObstacleMsg.h"
 #include "compsci403_assignment4/CheckPointSrv.h"
 #include "compsci403_assignment4/GetFreePathSrv.h"
@@ -157,7 +158,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 	{	// let robot be moving along x axis
 
 		// if the y value of p is within radius of robot, it is an obstacle
-		if (abs(p.y()) <= R_ROBOT && signbit(p.x()) == signbit(v))
+		if (fabs(p.y()) <= R_ROBOT && signbit(p.x()) == signbit(v))
 		{
 			// since p is obstacle, compute free path length
 			float f = p.x() - sqrt(pow(R_ROBOT, 2.0f) - pow(p.y(), 2.0f));
@@ -184,7 +185,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 
 		float r = c.norm(); // radius of rotation is the L1 norm of the center of rotation
 
-		float p_dist_from_robot = abs((c - p).norm() - r);
+		float p_dist_from_robot = fabs((c - p).norm() - r);
 
 		if (p_dist_from_robot < R_ROBOT) // obstacle
 		{
@@ -198,7 +199,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 
 		float pcl = atan(R_ROBOT / r); // arctan (robot / radius of rotation)
 
-		pcl = std::abs(pcl);
+		pcl = std::fabs(pcl);
 
 		float lco = pco - pcl; // free path angle
 
@@ -514,8 +515,8 @@ float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstac
 
 				Eigen::Vector2f p (all_it->x, all_it->y);
 				Eigen::Vector2f p_prime = p - obstacle.c();
-				float inner_dist = abs(p_prime.norm() - (obstacle.r() - R_ROBOT));
-				float outer_dist = abs(p_prime.norm() - (obstacle.r() + R_ROBOT));
+				float inner_dist = fabs(p_prime.norm() - (obstacle.r() - R_ROBOT));
+				float outer_dist = fabs(p_prime.norm() - (obstacle.r() + R_ROBOT));
 				dist = min(inner_dist, outer_dist);
 			}
 			else // linear, distance according to line segment  by [0,f] and R_ROBOT

@@ -9,8 +9,10 @@ ros::ServiceServer g_CheckPointSrv; // Service /COMPSCI403/CheckPoint
 ros::ServiceServer g_GetFreePathSrv; // Service /COMPSCI403/GetFreePath
 ros::ServiceServer g_GetCommandVelSrv; // Service /COMPSCI403/GetCommandVel
 ros::Subscriber g_LaserSub; // Subscriber /Cobot/Laser
+ros::Subscriber g_OdomSub; // Subscriber /odom
 
 ros::Publisher g_ObstaclesPub; // Publisher /COMPSCI403/Obstacles
+ros::Publisher g_DrivePub; // Publisher /Cobot/Drive
 
 ros::Publisher g_VisPub; // For Visualizations
 
@@ -18,6 +20,9 @@ static sensor_msgs::PointCloud g_TranslatedPC; // store translated point cloud f
 																							 // could make a class wrapper for access, but not sure
 																							 // how to deal with multiple copies occurring on stack
 static int32_t DISCRETIZATIONS = 10; // total discretizations >= DISCRETIZATIONS^2
+
+static Eigen::Vector2f g_v; // x: linear y: angular
+static Eigen::Vector2f g_robotPos; // current position of the robot, use to transform scan to origin
 
 using namespace std;
 
@@ -151,6 +156,14 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 	return true;
 }
 
+void OdometryOccurredCallback(const nav_msgs::Odometry &odom)
+{	// odometry is published before laser scan, save it into a global
+	g_v.x() = pow(odom.twist.twist.linear.x, 2.0f) + pow(odom.twist.twist.linear.y, 2.0f);
+	g_v.y() = odom.twist.twist.angular.z;
+	g_robotPos.x() = odom.pose.pose.position.x;
+	g_robotPos.y() = odom.pose.pose.position.y;
+}
+
 int main(int argc, char **argv) {
 
   ros::init(argc, argv, "assignment4");
@@ -193,6 +206,13 @@ int main(int argc, char **argv) {
 
   // 4. Create Service /COMPSCI403/GetCommandVel
   g_GetCommandVelSrv = n.advertiseService("/COMPSCI403/GetCommandVel", GetCommandVelCallback);
+
+  // 5. Create Publisher /Cobot/Drive
+  g_DrivePub = n.advertise<cobot_msgs::CobotDriveMsg>("/Cobot/Drive", 1);
+
+  // 5. Create Subscriber /odom
+  g_OdomSub = n.subscribe("/odom", 1, OdometryOccurredCallback);
+
 
   ros::Rate spin_rate (20); // 20 hz
 	
