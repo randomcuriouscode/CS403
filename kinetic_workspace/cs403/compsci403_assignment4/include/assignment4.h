@@ -371,7 +371,7 @@ inline vector<Eigen::Vector2f> GenDiscDynWind (Eigen::Vector2f v_0, int subdivis
 		}
 	}
 
-	discretized.push_back(v_0); // add initial velocity, just in case.
+	//discretized.push_back(v_0); // add initial velocity, just in case.
 
 	#ifdef GTEST
 	std::cerr << "Discretized " << discretized.size() << "[" << window_left <<
@@ -493,7 +493,8 @@ float DistFromSegment(Eigen::Vector2f p, Eigen::Vector2f start, Eigen::Vector2f 
 	@param all_points all points in the pointcloud
 */
 float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstacle, 
-	const vector<ObstacleInfo> &obstacles, const vector<geometry_msgs::Point32> &all_points)
+	const vector<ObstacleInfo> &obstacles, const vector<geometry_msgs::Point32> &all_points,
+	const ObstacleInfo &closest_pt)
 {
 	float score = 0.0f;
 	float min_d = numeric_limits<float>::max();
@@ -503,7 +504,7 @@ float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstac
 
 
 	// find closest distance of point that is not obstacle for distance avoidance
-	for (auto all_it= all_points.begin(); all_it != all_points.end(); all_it ++)
+	/*for (auto all_it= all_points.begin(); all_it != all_points.end(); all_it ++)
 	{
 		if (find_if(obstacles.begin(), obstacles.end(), [all_it](ObstacleInfo ob){
 			return ob.point().x == all_it->x && ob.point().y == all_it->y;
@@ -537,10 +538,10 @@ float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstac
 				min_d = dist; // set minimum to local minimum distance
 			}
 		}
-	}
+	}*/
 	
 
-	score += BETA * min_d;
+	score += BETA * closest_pt.f();
 	score *= SIGMA;
 
 	ROS_DEBUG("CalculateScore: returning score: %f", score);
