@@ -124,7 +124,7 @@ float ConstrainAngle(float x)
 	@param out_margin output margin between free path center and point
 	@param out_finangle output final angle
 */
-bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f, float *out_margin, float *out_finangle)
+bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle)
 {
 	if (!w) // 0 angular vel, calculate straight line free path to p
 	{	// let robot be moving along x axis
@@ -136,8 +136,8 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f, float *o
 			float f = p.x() - sqrt(pow(R_ROBOT, 2.0f) - pow(p.y(), 2.0f));
 
 			ROS_DEBUG("PointIsObstacle: p.y: %f is less than R_ROBOT: %f, free path length: %f", p.y(), R_ROBOT, f);
-
-			*out_f = f;
+			
+			obstacle.setf(f);
 
 			return true; // free path and obstacle found with 0 angular velocity
 		} //end if (abs(p.y() < R_ROBOT)
@@ -189,15 +189,15 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f, float *o
 
 		if (phi >= 0)
 		{
-			*out_finangle = lco - phi;
+			obstacle.setfinal_angle(lco-phi);
 		}
 		else
 		{
-			*out_finangle = ConstrainAngle(lco + phi);
+			obstacle.setfinal_angle(ConstrainAngle(lco + phi));
 		}
 
-		*out_f = f;
-		*out_margin = p_dist_from_robot;
+		obstacle.setf(f);
+		obstacle.setmargin(p_dist_from_robot);
 
 		return true; // free path obstacle found along curve
 		} // end if p_dist_from_robot < R_ROBOT
@@ -216,10 +216,16 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f, float *o
 */
 bool PointIsObstacle(Eigen::Vector2f p, float v, float w, float *out_f)
 {
-	float margin_dontcare;
-	float angle_dontcare;
+	ObstacleInfo info;
 
-	return PointIsObstacle(p, v, w, out_f, &margin_dontcare, &angle_dontcare);
+	bool obstacle = PointIsObstacle(p, v, w, info);
+
+	if (obstacle)
+	{
+		*out_f = info.f();
+	}
+	
+	return obstacle;
 }
 
 visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointCloud all_pts, 
@@ -371,24 +377,23 @@ bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float 
 	for (vector<geometry_msgs::Point32>::const_iterator it = pc.points.begin(); it != pc.points.end(); 
 				it++) // iterate over all converted points to find obstacle
 	{
-		float temp_f;
-		float temp_margin;
-		float temp_finangle;
+		ObstacleInfo info;
+		info.setpoint(*it);
 		bool temp_obstacle = PointIsObstacle(Eigen::Vector2f(it->x, it->y), 
-																		v, w, &temp_f, &temp_margin, &temp_finangle);
+																		v, w, info);
 		if (temp_obstacle) // found an obstacle
 		{
 			obstacle = true;
 
-			out_pointmap.push_back(ObstacleInfo(*it, temp_f, temp_margin, temp_finangle)); // push to output vector
+			out_pointmap.push_back(info); // push to output vector
 
-			if (temp_f < min_f) // obstacle is closer than current closest
+			if (info.f() < min_f) // obstacle is closer than current closest
 			{
-				ROS_DEBUG("ObstacleExist: Found an obstacle: %f, cur min: %f", temp_f, min_f);
+				ROS_DEBUG("ObstacleExist: Found an obstacle: %f, cur min: %f", info.f(), min_f);
 				closest_pt = *it;
-				min_f = temp_f;
-				min_margin = temp_margin;
-				min_finangle = temp_finangle;
+				min_f = info.f();
+				min_margin = info.margin();
+				min_finangle = info.final_angle();
 			}
 		}
 	}
