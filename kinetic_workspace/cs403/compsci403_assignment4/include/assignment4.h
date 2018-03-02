@@ -46,9 +46,9 @@ const Eigen::Matrix3f M_ROTATION = (Eigen::Matrix3f() << 1.f, 0.f, 0.f,
 const Eigen::MatrixXf M_TRANSLATION = (Eigen::MatrixXf(3,1) << .145f, 0.f, 0.23f).finished();
 
 // score calculation weights
-static float ALPHA = -5.0f; // angle weight
-static float BETA = 10.0f; // distance weight
-static float GAMMA = 1.0f; // velocity weight
+static float ALPHA = -2.5f; // angle weight
+static float BETA = 15.0f; // distance weight
+static float GAMMA = 2.0f; // velocity weight
 static float SIGMA = 1.0f; // normalization
 
 namespace t_helpers
