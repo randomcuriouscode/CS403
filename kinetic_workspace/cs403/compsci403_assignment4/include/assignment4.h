@@ -160,7 +160,6 @@ float ConstrainAngle(float x)
 */
 bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle)
 {
-	setprecision(7);
 	if (!w) // 0 angular vel, calculate straight line free path to p
 	{	// let robot be moving along x axis
 

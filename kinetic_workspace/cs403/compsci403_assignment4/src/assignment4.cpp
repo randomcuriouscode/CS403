@@ -94,13 +94,6 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 
 	if (g_DrivePub.getNumSubscribers()) // /Cobot/Drive has subscribers
 	{	
-		/*
-		for (auto it = translated_pc.points.begin(); it != translated_pc.points.end(); it++)
-		{	// translate all pointcloud points by current robot position.
-			it->x -= g_robotPos.x();
-			it->y -= g_robotPos.y();
-		}*/
-
 		vector<Eigen::Vector2f> disc_window = t_helpers::GenDiscDynWind(Eigen::Vector2f(g_v.x(), g_v.y()), DISCRETIZATIONS);
 		
 		Eigen::Vector2f best_vel = Eigen::Vector2f(g_v.x(), g_v.y());
@@ -229,6 +222,8 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "assignment4");
   ros::NodeHandle n;
 
+  setprecision(7); // set floating precision to 32 bit floating point maximum precision, just in case
+
   if (argc > 1)
   {
   	DISCRETIZATIONS = atoi(argv[1]) > 0 ? atoi(argv[1]) : DISCRETIZATIONS;
@@ -242,10 +237,14 @@ int main(int argc, char **argv) {
 
   		ROS_INFO("Set ALPHA: %f, BETA: %f, GAMMA: %f", ALPHA, BETA, GAMMA);
   	}
+  	else
+  	{
+  		ROS_INFO("Param: Not set ALPHA: %f, BETA: %f, GAMMA: %f", ALPHA, BETA, GAMMA);
+  	}
   }
   else
   {
-  	ROS_INFO("Param: Discretizations not set, defaulting");
+  	ROS_INFO("Param: Discretizations not set, defaulting %i", DISCRETIZATIONS);
   }
 
 	// Perform operations defined in Assignment 4
