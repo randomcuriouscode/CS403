@@ -173,9 +173,6 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 	}
 
 	sensor_msgs::PointCloud translated_pc = g_TranslatedPC;
-	
-	vector< t_helpers::ObstacleInfo > obstacles; // computed obstacles for dyn window
-	t_helpers::ObstacleInfo closest_pt; // closest point for dyn window
 
 	vector<Eigen::Vector2f> disc_window = t_helpers::GenDiscDynWind(Eigen::Vector2f(req.v_0, req.w_0), DISCRETIZATIONS);
 	
@@ -183,28 +180,30 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 	float best_score = numeric_limits<float>::min();
 
 	for (auto it_wind = disc_window.begin(); it_wind != disc_window.end(); it_wind++)
-	{ // iterate over each velocity in discrete window
-		t_helpers::ObstacleExist(translated_pc, it_wind->x(), it_wind->y(), obstacles, closest_pt); // true if not obstacle free
+		{ // iterate over each velocity in discrete window
+			vector< t_helpers::ObstacleInfo > obstacles; // computed obstacles for dyn window
+			t_helpers::ObstacleInfo closest_pt; // closest point for dyn window
+			t_helpers::ObstacleExist(translated_pc, it_wind->x(), it_wind->y(), obstacles, closest_pt); // true if not obstacle free
 
-		auto v_admissible = find_if(obstacles.begin(), obstacles.end(), 
-			[](t_helpers::ObstacleInfo &obstacle){
-			return obstacle.f() >= S_MAX; // admissible if free path geq max stopping dist
-		}); 
+			auto v_admissible = find_if(obstacles.begin(), obstacles.end(), 
+				[](t_helpers::ObstacleInfo &obstacle){
+				return obstacle.f() < S_MAX; // admissible if no free path is less than max stopping dist
+			}); 
 
-		if (v_admissible == end(obstacles))
-		{ // velocity is admissible
-			// compute score for each obstacle
-			for (auto it_ob = obstacles.begin(); it_ob != obstacles.end(); it_ob ++)
-			{
-				float score = t_helpers::CalculateScore(*it_wind, *it_ob, closest_pt);
-				if (score > best_score)
+			if (v_admissible == obstacles.end())
+			{ // velocity is admissible
+				// compute score for each obstacle
+				for (auto it_ob = obstacles.begin(); it_ob != obstacles.end(); it_ob ++)
 				{
-					best_score = score;
-					best_vel = *it_wind;
+					float score = t_helpers::CalculateScore(*it_wind, *it_ob, closest_pt);
+					if (score > best_score)
+					{
+						best_score = score;
+						best_vel = *it_wind;
+					}
 				}
 			}
 		}
-	}
 
 	ROS_DEBUG("GetCommandVelCallback: C_v: %f, C_w: %f, best_score: %f", 
 		best_vel.x(), best_vel.y(), best_score);
