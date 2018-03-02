@@ -214,6 +214,11 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 		ROS_DEBUG("PointIsObstacle: p.x:%f, p.y:%f, pco: %f, pcl: %f, lco: %f, f: %f", 
 			p.x(), p.y(), pco, pcl, lco, f);
 
+		#ifdef GTEST
+		cerr << "p.x:" << p.x() << ", p.y: " << p.y() << " pco: "<< pco << ", pcl: " << pcl << ", lco:" << lco <<", f: " << 
+			f << " c: " << c << " r: " << r << endl;
+		#endif
+
 		// calculate angle error margin from straight liine angle and predicted angle
 
 		Eigen::Vector2f op_trans = p + p; // translate vectors to p to calc angle
