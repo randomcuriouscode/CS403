@@ -35,6 +35,20 @@ TEST(TestSuite, test_GenDiscDynWind)
 	ASSERT_GE(discwind.size(), 100);
 }
 
+TEST(TestSuite, test_PointIsObstacle)
+{
+	Eigen::Vector2f radius (R_ROBOT, 0);
+
+	t_helpers::ObstacleInfo oi;
+	Eigen::Vector2f p (1,0); 
+
+	ASSERT_TRUE(PointIsObstacle(p, .5f, 0.f, oi));
+
+	ASSERT_EQ(oi.f(), (p - radius).norm());
+
+
+}
+
 int main(int argc, char **argv)
 {
 	testing::InitGoogleTest(&argc, argv);
