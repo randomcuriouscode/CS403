@@ -160,6 +160,7 @@ float ConstrainAngle(float x)
 */
 bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle)
 {
+	setprecision(7);
 	if (!w) // 0 angular vel, calculate straight line free path to p
 	{	// let robot be moving along x axis
 
@@ -203,7 +204,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 
 		// compute angle PCL using R and r (angle of center of robot to end of free path)
 
-		float pcl = asin(R_ROBOT / r); // arcsin (robot / radius of rotation)
+		float pcl = atan(R_ROBOT / r); // arcsin (robot / radius of rotation)
 
 		pcl = pcl;
 
@@ -211,8 +212,9 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 
 		float f = lco * r; // free path arclength = free path angle * radius of rotation
 
-		ROS_DEBUG("PointIsObstacle: p.x:%f, p.y:%f, pco: %f, pcl: %f, lco: %f, f: %f", 
-			p.x(), p.y(), pco, pcl, lco, f);
+		ROS_DEBUG("PointIsObstacle: p.x:%f, p.y:%f, pco: %f, pcl: %f, lco: %f, f: %f, c: %f, r: %f, v:%f, w: %f", 
+			p.x(), p.y(), pco, pcl, lco, f, c.y(), r, v, w);
+
 
 		#ifdef GTEST
 		cerr << "p.x:" << p.x() << ", p.y: " << p.y() << " pco: "<< pco << ", pcl: " << pcl << ", lco:" << lco <<", f: " << 

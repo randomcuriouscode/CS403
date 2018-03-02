@@ -101,9 +101,6 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 			it->y -= g_robotPos.y();
 		}*/
 
-		vector< t_helpers::ObstacleInfo > obstacles; // computed obstacles for dyn window
-		t_helpers::ObstacleInfo closest_pt; // closest point for dyn window
-
 		vector<Eigen::Vector2f> disc_window = t_helpers::GenDiscDynWind(Eigen::Vector2f(g_v.x(), g_v.y()), DISCRETIZATIONS);
 		
 		Eigen::Vector2f best_vel = Eigen::Vector2f(g_v.x(), g_v.y());
@@ -111,6 +108,8 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 
 		for (auto it_wind = disc_window.begin(); it_wind != disc_window.end(); it_wind++)
 		{ // iterate over each velocity in discrete window
+			vector< t_helpers::ObstacleInfo > obstacles; // computed obstacles for dyn window
+			t_helpers::ObstacleInfo closest_pt; // closest point for dyn window
 			t_helpers::ObstacleExist(translated_pc, it_wind->x(), it_wind->y(), obstacles, closest_pt); // true if not obstacle free
 
 			auto v_admissible = find_if(obstacles.begin(), obstacles.end(), 
@@ -118,7 +117,7 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 				return obstacle.f() < S_MAX; // admissible if no free path is less than max stopping dist
 			}); 
 
-			if (v_admissible == end(obstacles))
+			if (v_admissible == obstacles.end())
 			{ // velocity is admissible
 				// compute score for each obstacle
 				for (auto it_ob = obstacles.begin(); it_ob != obstacles.end(); it_ob ++)
@@ -135,9 +134,11 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 					}
 				}
 			}
+			
 			else
 				ROS_ERROR("ScanOccurredCallback: v: %f, w: %f is inadmissible due to [%f,%f]=%f", it_wind->x(), it_wind->y(),
 					v_admissible->point().x, v_admissible->point().y, v_admissible->f());
+				
 		}
 
 		ROS_INFO("ScanOccurredCallback: C_v: %f, C_w: %f, best_score: %f", 
