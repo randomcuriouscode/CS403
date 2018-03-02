@@ -110,7 +110,7 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 
 		for (auto it_wind = disc_window.begin(); it_wind != disc_window.end(); it_wind++)
 		{ // iterate over each velocity in discrete window
-			bool obstacle = t_helpers::ObstacleExist(translated_pc, it_wind->x(), it_wind->y(), obstacles, closest_pt); // true if not obstacle free
+			t_helpers::ObstacleExist(translated_pc, it_wind->x(), it_wind->y(), obstacles, closest_pt); // true if not obstacle free
 
 			auto v_admissible = find_if(obstacles.begin(), obstacles.end(), 
 				[](t_helpers::ObstacleInfo &obstacle){
@@ -122,7 +122,7 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 				// compute score for each obstacle
 				for (auto it_ob = obstacles.begin(); it_ob != obstacles.end(); it_ob ++)
 				{
-					float score = t_helpers::CalculateScore(*it_wind, *it_ob, obstacles, translated_pc.points, closest_pt);
+					float score = t_helpers::CalculateScore(*it_wind, *it_ob, closest_pt);
 					if (score > best_score)
 					{
 						best_score = score;
@@ -130,6 +130,7 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 					}
 				}
 			}
+			ROS_ERROR("ScanOccurredCallback: v: %f, w: %f is inadmissible", it_wind->x(), it_wind->y());
 		}
 
 		ROS_DEBUG("ScanOccurredCallback: C_v: %f, C_w: %f, best_score: %f", 
@@ -140,7 +141,7 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 		cobot_msgs::CobotDriveMsg msg;
 		msg.header = translated_pc.header;
 		msg.v = best_vel.x();
-		msg.w = best_vel.w();
+		msg.w = best_vel.y();
 		g_DrivePub.publish(msg);
 	}
 	else
@@ -177,7 +178,7 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 
 	for (auto it_wind = disc_window.begin(); it_wind != disc_window.end(); it_wind++)
 	{ // iterate over each velocity in discrete window
-		bool obstacle = t_helpers::ObstacleExist(translated_pc, it_wind->x(), it_wind->y(), obstacles, closest_pt); // true if not obstacle free
+		t_helpers::ObstacleExist(translated_pc, it_wind->x(), it_wind->y(), obstacles, closest_pt); // true if not obstacle free
 
 		auto v_admissible = find_if(obstacles.begin(), obstacles.end(), 
 			[](t_helpers::ObstacleInfo &obstacle){
@@ -189,7 +190,7 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 			// compute score for each obstacle
 			for (auto it_ob = obstacles.begin(); it_ob != obstacles.end(); it_ob ++)
 			{
-				float score = t_helpers::CalculateScore(*it_wind, *it_ob, obstacles, translated_pc.points, closest_pt);
+				float score = t_helpers::CalculateScore(*it_wind, *it_ob, closest_pt);
 				if (score > best_score)
 				{
 					best_score = score;

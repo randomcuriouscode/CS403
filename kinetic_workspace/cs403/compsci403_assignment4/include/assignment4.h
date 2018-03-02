@@ -135,7 +135,7 @@ public:
 };
 
 /*
-	Constrain an angle between 0, 2pi
+	Constrain an angle between -pi, pi
 */
 float ConstrainAngle(float x)
 {
@@ -219,11 +219,10 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 		Eigen::Vector2f op_trans = p + p; // translate vectors to p to calc angle
 		Eigen::Vector2f cp_trans = p + cp;
 
-		float phi = acos((cp_trans).dot(op_trans) / (cp_trans.norm() * op_trans.norm()));
+		float margin = acos((cp_trans).dot(op_trans) / (cp_trans.norm() * op_trans.norm()));
 
 		// set output obstacle info.
-		obstacle.setfinal_angle(ConstrainAngle(phi));
-
+		obstacle.setfinal_angle(ConstrainAngle(margin));
 
 		obstacle.setf(f);
 		obstacle.setmargin(p_dist_from_robot);
@@ -437,6 +436,7 @@ bool ObstacleExist(const sensor_msgs::PointCloud pc, const float v, const float 
 		out_closest.setmargin(min_margin);
 		out_closest.setfinal_angle(min_finangle);
 		out_closest.setr(out_pointmap[0].r());
+		out_closest.setc(out_pointmap[0].c());
 		return true;
 	}
 	else // no obstacles along the path
@@ -493,11 +493,10 @@ float DistFromSegment(Eigen::Vector2f p, Eigen::Vector2f start, Eigen::Vector2f 
 	@param all_points all points in the pointcloud
 */
 float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstacle, 
-	const vector<ObstacleInfo> &obstacles, const vector<geometry_msgs::Point32> &all_points,
 	const ObstacleInfo &closest_pt)
 {
 	float score = 0.0f;
-	float min_d = numeric_limits<float>::max();
+	//float min_d = numeric_limits<float>::max();
 
 	score += ALPHA * obstacle.final_angle(); // angle() score
 	score += GAMMA * velocity.x(); // linear velocity is the only factor
