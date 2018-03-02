@@ -46,7 +46,11 @@ TEST(TestSuite, test_PointIsObstacle)
 
 	ASSERT_EQ(oi.f(), (p - radius).norm());
 
+	p = Eigen::Vector2f(1/3, 1/3);
 
+	ASSERT_TRUE(PointIsObstacle(p, .5f, 1.5f, oi));
+
+	ASSERT_TRUE(oi.f() > 1.3 && oi.f() < 1.4);
 }
 
 int main(int argc, char **argv)

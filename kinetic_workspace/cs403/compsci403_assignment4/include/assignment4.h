@@ -203,9 +203,9 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 
 		// compute angle PCL using R and r (angle of center of robot to end of free path)
 
-		float pcl = atan(R_ROBOT / r); // arctan (robot / radius of rotation)
+		float pcl = asin(R_ROBOT / r); // arcsin (robot / radius of rotation)
 
-		pcl = std::fabs(pcl);
+		pcl = pcl;
 
 		float lco = pco - pcl; // free path angle
 
