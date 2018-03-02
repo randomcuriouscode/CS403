@@ -222,7 +222,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 		float phi = acos((cp_trans).dot(op_trans) / (cp_trans.norm() * op_trans.norm()));
 
 		// set output obstacle info.
-		obstacle.setfinal_angle(ConstrainAngle(lco-phi));
+		obstacle.setfinal_angle(ConstrainAngle(phi));
 
 
 		obstacle.setf(f);
