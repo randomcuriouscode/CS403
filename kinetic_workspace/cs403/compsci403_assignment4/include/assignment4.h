@@ -167,7 +167,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 		if (fabs(p.y()) <= R_ROBOT && signbit(p.x()) == signbit(v))
 		{
 			// since p is obstacle, compute free path length
-			float f = p.x() - sqrt(pow(R_ROBOT, 2.0f) - pow(p.y(), 2.0f));
+			float f = p.x() - R_ROBOT;
 
 			ROS_DEBUG("PointIsObstacle: p.y: %f is less than R_ROBOT: %f, free path length: %f", p.y(), R_ROBOT, f);
 			

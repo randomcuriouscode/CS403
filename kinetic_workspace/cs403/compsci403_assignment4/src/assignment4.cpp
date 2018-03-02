@@ -94,11 +94,12 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 
 	if (g_DrivePub.getNumSubscribers()) // /Cobot/Drive has subscribers
 	{	
+		/*
 		for (auto it = translated_pc.points.begin(); it != translated_pc.points.end(); it++)
 		{	// translate all pointcloud points by current robot position.
 			it->x -= g_robotPos.x();
 			it->y -= g_robotPos.y();
-		}
+		}*/
 
 		vector< t_helpers::ObstacleInfo > obstacles; // computed obstacles for dyn window
 		t_helpers::ObstacleInfo closest_pt; // closest point for dyn window
@@ -128,15 +129,19 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 						best_score = score;
 						best_vel = *it_wind;
 					}
+					else
+					{
+						//ROS_ERROR("ScanOccurredCallback: score %f too low for obstacle [%f,%f]", best_score, it_ob->point().x, it_ob->point().y);
+					}
 				}
 			}
-			ROS_ERROR("ScanOccurredCallback: v: %f, w: %f is inadmissible", it_wind->x(), it_wind->y());
+			else
+				ROS_ERROR("ScanOccurredCallback: v: %f, w: %f is inadmissible due to [%f,%f]=%f", it_wind->x(), it_wind->y(),
+					v_admissible->point().x, v_admissible->point().y, v_admissible->f());
 		}
 
-		ROS_DEBUG("ScanOccurredCallback: C_v: %f, C_w: %f, best_score: %f", 
+		ROS_INFO("ScanOccurredCallback: C_v: %f, C_w: %f, best_score: %f", 
 			best_vel.x(), best_vel.y(), best_score);
-
-		ROS_DEBUG("Publishing to /Cobot/Drive");
 
 		cobot_msgs::CobotDriveMsg msg;
 		msg.header = translated_pc.header;
