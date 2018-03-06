@@ -1,0 +1,3 @@
+[submodule "kinetic_workspace/cs403/group-project"]
+	path = kinetic_workspace/cs403/group-project
+	url = git@github.com:rpg711/cs403-semester-project.git
