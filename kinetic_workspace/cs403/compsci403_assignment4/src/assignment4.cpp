@@ -19,7 +19,7 @@ ros::Publisher g_VisPub; // For Visualizations
 static sensor_msgs::PointCloud g_TranslatedPC; // store translated point cloud from result of part 3
 																							 // could make a class wrapper for access, but not sure
 																							 // how to deal with multiple copies occurring on stack
-static int32_t DISCRETIZATIONS = 7; // total discretizations >= DISCRETIZATIONS^2
+static int32_t DISCRETIZATIONS = 10; // total discretizations >= DISCRETIZATIONS^2
 
 static Eigen::Vector2f g_v; // x: linear y: angular
 static Eigen::Vector2f g_robotPos; // current position of the robot, use to transform scan to origin

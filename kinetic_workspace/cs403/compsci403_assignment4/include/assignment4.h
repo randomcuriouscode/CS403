@@ -48,8 +48,8 @@ const Eigen::Matrix3f M_ROTATION = (Eigen::Matrix3f() << 1.f, 0.f, 0.f,
 const Eigen::MatrixXf M_TRANSLATION = (Eigen::MatrixXf(3,1) << .145f, 0.f, 0.23f).finished();
 
 // score calculation weights
-static float ALPHA = -2.5f; // angle weight
-static float BETA = 15.0f; // distance weight
+static float ALPHA = 0.112000f; // angle weight
+static float BETA = 4.0f; // distance weight
 static float GAMMA = 2.0f; // velocity weight
 static float SIGMA = 1.0f; // normalization
 static float range_max = 0.f;
@@ -142,14 +142,14 @@ public:
 */
 float ConstrainAngle(float x)
 {
-	while (x < -M_PI)
+	while (x < 0)
 	{
-		x += 2 * M_PI;
+		x += M_PI;
 	}
 
 	while (x > M_PI)
 	{
-		x -= 2 * M_PI;
+		x -= M_PI;
 	}
 
 	return x;
