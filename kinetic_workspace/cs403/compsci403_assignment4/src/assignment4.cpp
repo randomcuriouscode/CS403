@@ -103,7 +103,7 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 		{ // iterate over each velocity in discrete window
 			vector< t_helpers::ObstacleInfo > obstacles; // computed obstacles for dyn window
 			t_helpers::ObstacleInfo closest_pt; // closest point for dyn window
-			t_helpers::ObstacleExist(translated_pc, it_wind->x(), it_wind->y(), obstacles, closest_pt); // true if not obstacle free
+      t_helpers::ObstacleExist(translated_pc, it_wind->x(), it_wind->y(), obstacles, closest_pt); // true if not obstacle free
 
 			auto v_admissible = find_if(obstacles.begin(), obstacles.end(), 
 				[](t_helpers::ObstacleInfo &obstacle){
@@ -121,17 +121,8 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 						best_score = score;
 						best_vel = *it_wind;
 					}
-					else
-					{
-						//ROS_ERROR("ScanOccurredCallback: score %f too low for obstacle [%f,%f]", best_score, it_ob->point().x, it_ob->point().y);
-					}
 				}
 			}
-			/*
-			else
-				ROS_ERROR("ScanOccurredCallback: v: %f, w: %f is inadmissible due to [%f,%f]=%f", it_wind->x(), it_wind->y(),
-					v_admissible->point().x, v_admissible->point().y, v_admissible->f());
-			*/	
 		}
 /*
 		ROS_INFO("ScanOccurredCallback: C_v: %f, C_w: %f, best_score: %f", 

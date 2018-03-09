@@ -22,6 +22,8 @@
 #include "compsci403_assignment4/GetFreePathSrv.h"
 #include "compsci403_assignment4/GetCommandVelSrv.h"
 
+#include <queue>
+
 #include <cmath>
 
 using namespace std;
@@ -50,6 +52,7 @@ static float ALPHA = -2.5f; // angle weight
 static float BETA = 15.0f; // distance weight
 static float GAMMA = 2.0f; // velocity weight
 static float SIGMA = 1.0f; // normalization
+static float range_max = 0.f;
 
 namespace t_helpers
 {
@@ -203,7 +206,7 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 
 		// compute angle PCL using R and r (angle of center of robot to end of free path)
 
-		float pcl = atan(R_ROBOT / r); // arcsin (robot / radius of rotation)
+		float pcl = atan(R_ROBOT / r); // arctan (robot / radius of rotation)
 
 		pcl = pcl;
 
@@ -491,6 +494,54 @@ float DistFromSegment(Eigen::Vector2f p, Eigen::Vector2f start, Eigen::Vector2f 
 }
 
 /*
+  Constrain an angle between 0, pi
+*/
+float ConstrainAngleCircle(float x)
+{
+  while (x < 0)
+  {
+    x += M_PI;
+  }
+
+  while (x > M_PI)
+  {
+    x -= M_PI;
+  }
+
+  return x;
+}
+
+
+float angle(const Eigen::Vector2f &p, float v, float w)
+{
+  // 1. get radius about origin
+
+  float delta_theta = ConstrainAngleCircle(w * TIME_DELTA);
+  float r_origin = 2 * v / w * sin(delta_theta);
+
+  // 2. get x, y coordinates
+  float x = r_origin * cos(delta_theta);
+  float y = r_origin * sin(delta_theta);
+
+  Eigen::Vector2f predicted_location (x,y);
+
+  // 3. initial heading vector will always be unit vector in x direction
+  Eigen::Vector2f heading_orig (1,0);
+  Eigen::MatrixXf rotation = (Eigen::Matrix2f() << cos(delta_theta), -sin(delta_theta),
+                                                 sin(delta_theta), cos(delta_theta)).finished();
+
+  Eigen::Vector2f heading_pred = rotation * heading_orig;
+
+  // calculate angle between predicted_location to p and heading
+
+  Eigen::Vector2f dir_to_point = p - predicted_location;
+
+  float angle_delta = acos(dir_to_point.dot(heading_pred) / (heading_pred.norm() * dir_to_point.norm()));
+
+  return ConstrainAngle(angle_delta) - M_PI/2;
+}
+
+/*
 	Calculate the score of an obstacle given velocity.
 	Objective: minimize angle, maximize distance and velocity.
 	@param velocity the velocity vector [v,w]
@@ -503,9 +554,12 @@ float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstac
 {
 	float score = 0.0f;
 	//float min_d = numeric_limits<float>::max();
+  float anglescore =  angle(Eigen::Vector2f(obstacle.point().x, obstacle.point().y), 
+                          velocity.x(), velocity.y());
+  float anglescore_norm = (anglescore - 0) / (.5 * M_PI - 0); // normalize between [0,1]
 
-	score += ALPHA * obstacle.final_angle(); // angle() score
-	score += GAMMA * velocity.x(); // linear velocity is the only factor
+	score += ALPHA * anglescore_norm; // angle() score
+	score += GAMMA * ((velocity.x() - 0) / (V_MAX)); // linear velocity is the only factor
 
 
 	// find closest distance of point that is not obstacle for distance avoidance
@@ -546,7 +600,7 @@ float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstac
 	}*/
 	
 
-	score += BETA * closest_pt.f();
+	score += BETA * (closest_pt.f() / range_max);
 	score *= SIGMA;
 
 	ROS_DEBUG("CalculateScore: returning score: %f, for f:%f, v: %f, angle: %f", score, closest_pt.f(), velocity.x(), obstacle.final_angle());
@@ -564,7 +618,7 @@ void LaserScanToPointCloud(const sensor_msgs::LaserScan &msg, sensor_msgs::Point
   float angle_max = msg.angle_max;
   float angle_increment = msg.angle_increment;
   float range_min = msg.range_min;
-  float range_max = msg.range_max;
+  range_max = msg.range_max;
   std::vector<float> ranges = msg.ranges;
 
   std::size_t m = ranges.size();
