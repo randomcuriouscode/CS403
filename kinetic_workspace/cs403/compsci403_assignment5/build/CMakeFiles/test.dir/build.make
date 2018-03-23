@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5
+CMAKE_SOURCE_DIR = /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5/build
+CMAKE_BINARY_DIR = /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5/build
 
 # Utility rule file for test.
 
@@ -67,6 +67,6 @@ CMakeFiles/test.dir/clean:
 .PHONY : CMakeFiles/test.dir/clean
 
 CMakeFiles/test.dir/depend:
-	cd /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5 /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5 /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5/build /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5/build /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5/build/CMakeFiles/test.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5 /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5 /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5/build /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5/build /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5/build/CMakeFiles/test.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/test.dir/depend
 

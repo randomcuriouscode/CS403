@@ -347,7 +347,7 @@ visualization_msgs::MarkerArray GenPointListMarkers(const sensor_msgs::PointClou
   @param subdivisions amount of discretizations per row and per col.
   @returns a list of discretized possible linear/angular velocity values [v,w]
 */
-inline vector<Eigen::Vector2f> GenDiscDynWind (Eigen::Vector2f v_0, int subdivisions)
+inline vector<Eigen::Vector2f> GenDiscDynWind (Eigen::Vector2f v_0, int subdivisions, float *max_v)
 { // v_0.x = linear vel, v_0.y = angular vel
   vector<Eigen::Vector2f> discretized;
 
@@ -358,6 +358,7 @@ inline vector<Eigen::Vector2f> GenDiscDynWind (Eigen::Vector2f v_0, int subdivis
   // calc top window bound
   window_temp = AC_MAX * TIME_DELTA + v_0.x();
   float window_top = window_temp <= V_CRIT ? window_temp : V_CRIT;
+  *max_v = window_top;
 
   // calc right window bound
   window_temp = WC_MAX * TIME_DELTA + v_0.y();
@@ -557,8 +558,8 @@ float CalculateScore(const Eigen::Vector2f &velocity, const ObstacleInfo &obstac
 {
   float score = 0.0f;
   //float min_d = numeric_limits<float>::max();
-  float anglescore =  angle(Eigen::Vector2f(obstacle.point().x, obstacle.point().y), 
-                          velocity.x(), velocity.y());
+  float anglescore =  velocity.x() ? angle(Eigen::Vector2f(obstacle.point().x, obstacle.point().y), 
+                          velocity.x(), velocity.y()) : .5f * M_PI;
   float anglescore_norm = (anglescore - 0) / (.5 * M_PI - 0); // normalize between [0,1]
 
   score += ALPHA * anglescore_norm; // angle() score

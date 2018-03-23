@@ -7,6 +7,6 @@
 # new environment variables
 
 # modified environment variables
-export CMAKE_PREFIX_PATH="/home/rpg711/kinetic_workspace/cs403/compsci403_assignment5/build/devel:$CMAKE_PREFIX_PATH"
-export ROSLISP_PACKAGE_DIRECTORIES="/home/rpg711/kinetic_workspace/cs403/compsci403_assignment5/build/devel/share/common-lisp"
-export ROS_PACKAGE_PATH="/home/rpg711/kinetic_workspace/cs403/compsci403_assignment5:/opt/ros/kinetic/share"
+export CMAKE_PREFIX_PATH="/home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5/build/devel:$CMAKE_PREFIX_PATH"
+export ROSLISP_PACKAGE_DIRECTORIES="/home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5/build/devel/share/common-lisp"
+export ROS_PACKAGE_PATH="/home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5:/opt/ros/kinetic/share"

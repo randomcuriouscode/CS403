@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5
+CMAKE_SOURCE_DIR = /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5/build
+CMAKE_BINARY_DIR = /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5/build
 
 # Utility rule file for rosbuild_clean-test-results.
 
@@ -71,6 +71,6 @@ CMakeFiles/rosbuild_clean-test-results.dir/clean:
 .PHONY : CMakeFiles/rosbuild_clean-test-results.dir/clean
 
 CMakeFiles/rosbuild_clean-test-results.dir/depend:
-	cd /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5 /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5 /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5/build /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5/build /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5/build/CMakeFiles/rosbuild_clean-test-results.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5 /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5 /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5/build /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5/build /home/rpg711/Documents/CS403/kinetic_workspace/cs403/compsci403_assignment5/build/CMakeFiles/rosbuild_clean-test-results.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/rosbuild_clean-test-results.dir/depend
 
