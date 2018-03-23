@@ -31,6 +31,12 @@ ros::ServiceServer g_GetFreePathSrv; // Service /COMPSCI403/GetFreePath
 ros::ServiceServer g_ObstacleLaserScanSrv; // Service /COMPSCI403/ObstacleLaserScan
 ros::ServiceServer g_GetCommandVelSrv; // Service /COMPSCI403/GetCommandVel
 
+ros::ServiceClient g_GetTransformationCl;
+
+ros::Subscriber g_OdomSub; // Subscriber /odom
+ros::Subscriber g_LaserSub; // Subscriber /COMPSCI403/LaserScan
+
+ros::Publisher g_DrivePub; // publisher /cmd_vel_mux/input/navi
 ros::Publisher g_VisPub; // For Visualizations
 
 static sensor_msgs::PointCloud g_TranslatedPC; // store translated point cloud from result of part 3
@@ -121,23 +127,9 @@ bool ObstacleLaserScanCallback(compsci403_assignment5::ObstacleLaserScanSrv::Req
 
   t_helpers::ProjectRangeFinderToRobotRef(req.S, R, T, translated_pc);
 
-  // TODO wait for TA response on this, translate pc back to laserscan?
-
-  sensor_msgs::LaserScan s_prime;
-  s_prime.header = req.S.header;
-  s_prime.header.frame_id = "/base_footprint";
-  s_prime.angle_min = req.S.angle_min;
-  s_prime.angle_max = req.S.angle_max;
-  s_prime.time_increment = req.S.time_increment;
-  s_prime.scan_time = req.S.scan_time;
-  s_prime.range_min = req.S.range_min;
-  s_prime.range_max = req.S.range_max;
-
   g_TranslatedPC = translated_pc;
 
-  t_helpers::PointCloudToLaserScan(translated_pc, s_prime);
-
-  res.S_prime = s_prime;
+  res.S_prime = translated_pc.points;
 
   return true;
 }
@@ -195,6 +187,49 @@ bool GetCommandVelCallback (compsci403_assignment5::GetCommandVelSrv::Request &r
   return true;
 }
 
+// 5.
+void ScanOccurredCallback(const sensor_msgs::LaserScan &msg)
+{
+  // Call GetTransformation service
+  compsci403_assignment5::GetTransformationSrv params;
+  if (g_GetTransformationCl.call(params))
+  {
+    // get rigid body transform constants
+    Matrix3f R;
+    Vector3f T (params.response.T.x, params.response.T.y, params.response.T.z);
+
+    for (size_t row = 0; row < 3; row ++)
+    {
+      for (size_t col = 0; col < 3; col ++)
+      {
+        R(row,col) = params.response.R[3 * row + col];
+      }
+    }
+
+    // transform laser scan from sensor to robot reference frame
+    sensor_msgs::PointCloud translated_pc;
+
+    t_helpers::ProjectRangeFinderToRobotRef(msg, R, T, translated_pc);
+
+
+
+  }
+  else
+  {
+    ROS_ERROR("ScanOccurredCallback: FATAL ERROR GetTransformationSrv is DEAD");
+  }
+}
+
+// 5.
+void OdometryOccurredCallback(const nav_msgs::Odometry &odom)
+{ // odometry is published before laser scan, save it into a global
+  g_v.x() = sqrt(pow(odom.twist.twist.linear.x, 2.0f) + pow(odom.twist.twist.linear.y, 2.0f));
+  g_v.y() = odom.twist.twist.angular.z;
+  g_robotPos.x() = odom.pose.pose.position.x;
+  g_robotPos.y() = odom.pose.pose.position.y;
+  ROS_DEBUG("OdometryOccurredCallback: set to: v: %f, w: %f, p_x: %f, p_y: %f", g_v.x(), g_v.y(), g_robotPos.x(), g_robotPos.y());
+}
+
 int main(int argc, char **argv) {
   ros::init(argc, argv, "compsci403_assignment5");
   ros::NodeHandle n;
@@ -237,6 +272,18 @@ int main(int argc, char **argv) {
   // 4. Create Service /COMPSCI403/GetCommandVel
   g_GetCommandVelSrv = n.advertiseService("/COMPSCI403/GetCommandVel", GetCommandVelCallback);
 
+  // 5. Create Publisher /cmd_vel_mux/input/navi type geometry_msgs/Twist
+  g_DrivePub = n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi", 1);
+
+  // 5. Client for service /COMPSCI403/GetTransformation
+
+  g_GetTransformationCl = n.serviceClient<compsci403_assignment5::GetTransformationSrv>("/COMPSCI403/GetTransformation");
+
+  // 5. Create Subscriber /odom
+  g_OdomSub = n.subscribe("/odom", 1, OdometryOccurredCallback);
+
+  // 5. Create Subscriber /COMPSCI403/LaserScan
+  g_LaserSub = n.subscribe("/COMPSCI403/LaserScan", 5, ScanOccurredCallback);
 
   ros::Rate spin_rate (20); // 20 hz
   

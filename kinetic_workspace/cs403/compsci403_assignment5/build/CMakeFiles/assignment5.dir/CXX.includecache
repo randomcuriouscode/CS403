@@ -181,8 +181,8 @@ sensor_msgs/LaserScan.h
 ../srv_gen/cpp/include/compsci403_assignment5/sensor_msgs/LaserScan.h
 geometry_msgs/Point32.h
 ../srv_gen/cpp/include/compsci403_assignment5/geometry_msgs/Point32.h
-sensor_msgs/LaserScan.h
-../srv_gen/cpp/include/compsci403_assignment5/sensor_msgs/LaserScan.h
+geometry_msgs/Point32.h
+../srv_gen/cpp/include/compsci403_assignment5/geometry_msgs/Point32.h
 
 /home/rpg711/kinetic_workspace/cs403/compsci403_assignment5/src/assignment5.cpp
 assignment5.h

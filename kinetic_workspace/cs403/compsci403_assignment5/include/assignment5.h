@@ -177,15 +177,9 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 
       ROS_DEBUG("PointIsObstacle: p.y: %f is less than R_ROBOT: %f, free path length: %f", p.y(), R_ROBOT, f);
       
-      if (f < S_MAX) // only an obstacle if free path length is less than max stopping distance
-      {
-        obstacle.setf(f);
-        return true;
-      }
-      else
-      {
-        return false;
-      }
+      obstacle.setf(f);
+
+      return true; // free path and obstacle found with 0 angular velocity
     } //end if (abs(p.y() < R_ROBOT)
     else // not an obstacle
     {
@@ -239,22 +233,15 @@ bool PointIsObstacle(Eigen::Vector2f p, float v, float w, ObstacleInfo &obstacle
 
     float margin = acos((cp_trans).dot(op_trans) / (cp_trans.norm() * op_trans.norm()));
 
-    if (f < S_MAX)
-    {
-      // set output obstacle info.
-      obstacle.setfinal_angle(ConstrainAngle(margin));
+    // set output obstacle info.
+    obstacle.setfinal_angle(ConstrainAngle(margin));
 
-      obstacle.setf(f);
-      obstacle.setmargin(p_dist_from_robot);
-      obstacle.setr(r);
-      obstacle.setc(c);
-      return true;
-    }
-    else
-    {
-      return false;
-    }
-    
+    obstacle.setf(f);
+    obstacle.setmargin(p_dist_from_robot);
+    obstacle.setr(r);
+    obstacle.setc(c);
+
+    return true; // free path obstacle found along curve
     } // end if p_dist_from_robot < R_ROBOT
     else // not an obstacle
     {
@@ -647,50 +634,59 @@ void LaserScanToPointCloud(const sensor_msgs::LaserScan &msg, sensor_msgs::Point
   float cur_angle = angle_min;
 
   for(std::size_t i = 0; i < m; ++i){
-    float x_i = ranges[i] * cos(cur_angle);
-    float y_i = ranges[i] * sin(cur_angle);
+    if (ranges[i] < range_max && ranges[i] > range_min){
+      float x_i = ranges[i] * cos(cur_angle);
+      float y_i = ranges[i] * sin(cur_angle);
 
-    geometry_msgs::Point32 p;
-    p.x = x_i;
-    p.y = y_i;
+      geometry_msgs::Point32 p;
+      p.x = x_i;
+      p.y = y_i;
 
-    #ifdef GTEST
-    ROS_DEBUG("X_%lu: %f,Y_%lu: %f", i, x_i, i, y_i);
-    #endif
+      #ifdef GTEST
+      ROS_DEBUG("X_%lu: %f,Y_%lu: %f", i, x_i, i, y_i);
+      #endif
 
-    pc.points.push_back(p);
+      pc.points.push_back(p);
+    }
     cur_angle += angle_increment;
   }
 } // end LaserScanToPointCloud
 
-/*
-  Transform a point cloud back to a laser scan. 
-  The header and constant values of the laser scan must be set
-  The input pointcloud points must be sorted in order of increasing angle.
-  The input points must correspond 1:1 to their original angles.
-*/
-void PointCloudToLaserScan(const sensor_msgs::PointCloud &pc, sensor_msgs::LaserScan &msg)
-{
-  float angle_min = msg.angle_min;
-  float angle_max = msg.angle_max;
-  float angle_increment = msg.angle_increment;
-  float range_min = msg.range_min;
-  range_max = msg.range_max;
 
-  std::size_t m = pc.points.size();
+// /*
+//   Transform a point cloud back to a laser scan. 
+//   The header and constant values of the laser scan must be set
+//   The input pointcloud points must be sorted in order of increasing angle.
+//   The input points must correspond 1:1 to their original angles.
+// */
+// void PointCloudToLaserScan(const sensor_msgs::PointCloud &pc, sensor_msgs::LaserScan &msg)
+// {
+//   float angle_min = msg.angle_min;
+//   float angle_max = msg.angle_max;
+//   float angle_increment = msg.angle_increment;
+//   float range_min = msg.range_min;
+//   range_max = msg.range_max;
 
-  float cur_angle = angle_min;
+//   std::size_t m = pc.points.size();
 
-  for(std::size_t i = 0; i < m; ++i)
-  {
-    // compute radius = sqrt(x^2 + y^2)
-    const geometry_msgs::Point32& p = pc.points[i];
-    float r = sqrt(pow(p.x, 2) + pow(p.y, 2));
-    msg.ranges.push_back(r);
+//   float cur_angle = angle_min;
 
-    cur_angle += angle_increment;
-  }
-}
+//   for(std::size_t i = 0; i < m; ++i)
+//   {
+//     // compute radius = sqrt(x^2 + y^2)
+//     const geometry_msgs::Point32& p = pc.points[i];
+//     float r = sqrt(pow(p.x, 2) + pow(p.y, 2));
+
+//     float theta = atan(p.y/p.x);
+
+//     if (theta == cur_angle)
+//     {
+//       msg.ranges.push_back(r);
+//     }
+
+//     cur_angle += angle_increment;
+//   }
+// }
 
 /*
   1. Project a laser scan dataset measured in the reference frame of the scanner to the reference frame of the robot
