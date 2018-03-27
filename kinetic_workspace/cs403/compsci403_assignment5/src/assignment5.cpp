@@ -145,44 +145,63 @@ bool GetCommandVelCallback (compsci403_assignment5::GetCommandVelSrv::Request &r
   }
 
   sensor_msgs::PointCloud translated_pc = g_TranslatedPC;
-
   float max_disc_v;
   vector<Eigen::Vector2f> disc_window = t_helpers::GenDiscDynWind(Eigen::Vector2f(req.v_0, req.w_0), DISCRETIZATIONS, &max_disc_v);
   
   Eigen::Vector2f best_vel = Eigen::Vector2f(req.v_0, req.w_0);
   float best_score = numeric_limits<float>::min();
 
+  bool atleast_one_admissible = false;
+
   for (auto it_wind = disc_window.begin(); it_wind != disc_window.end(); it_wind++)
     { // iterate over each velocity in discrete window
       vector< t_helpers::ObstacleInfo > obstacles; // computed obstacles for dyn window
       t_helpers::ObstacleInfo closest_pt; // closest point for dyn window
-      t_helpers::ObstacleExist(translated_pc, it_wind->x(), it_wind->y(), obstacles, closest_pt); // true if not obstacle free
-
+      bool obstacle = t_helpers::ObstacleExist(translated_pc, it_wind->x(), it_wind->y(), obstacles, closest_pt); // true if not obstacle free
+      if (obstacle)
+      {
       auto v_admissible = find_if(obstacles.begin(), obstacles.end(), 
         [](t_helpers::ObstacleInfo &obstacle){
         return obstacle.f() < S_MAX; // admissible if no free path is less than max stopping dist
       }); 
 
-      if (v_admissible == obstacles.end())
-      { // velocity is admissible
-        // compute score for each obstacle
-        for (auto it_ob = obstacles.begin(); it_ob != obstacles.end(); it_ob ++)
-        {
-          float score = t_helpers::CalculateScore(*it_wind, *it_ob, closest_pt);
-          if (score > best_score)
+        if (v_admissible == obstacles.end())
+        { // velocity is admissible
+          // compute score for each obstacle
+          atleast_one_admissible = true;
+          for (auto it_ob = obstacles.begin(); it_ob != obstacles.end(); it_ob ++)
           {
-            best_score = score;
-            best_vel = *it_wind;
+            float score = t_helpers::CalculateScore(*it_wind, *it_ob, closest_pt);
+            if (score > best_score)
+            {
+              best_score = score;
+              best_vel = *it_wind;
+            }
           }
         }
       }
+      else
+      {
+        res.C_v = max_disc_v;
+        res.C_w = 0.0f;
+        
+        return true;
+      }
     }
 
+  if (atleast_one_admissible)
+  {
   ROS_DEBUG("GetCommandVelCallback: C_v: %f, C_w: %f, best_score: %f", 
     best_vel.x(), best_vel.y(), best_score);
 
   res.C_v = best_vel.x();
   res.C_w = best_vel.y();
+  }
+  else
+  {
+    res.C_w = 0.1f; // spin in place 
+    res.C_v = 0.0f;
+  }
 
   g_TranslatedPC = sensor_msgs::PointCloud(); // reset the cached pointcloud
   return true;
@@ -209,7 +228,7 @@ void ScanOccurredCallback(const sensor_msgs::LaserScan &msg)
 
     // transform laser scan from sensor to robot reference frame
     sensor_msgs::PointCloud translated_pc;
-
+    bool atleast_one_admissible = false;
     t_helpers::ProjectRangeFinderToRobotRef(msg, R, T, translated_pc);
     float max_disc_v;
     vector<Eigen::Vector2f> disc_window = t_helpers::GenDiscDynWind(Eigen::Vector2f(g_v.x(), g_v.y()), DISCRETIZATIONS, &max_disc_v);
@@ -225,14 +244,16 @@ void ScanOccurredCallback(const sensor_msgs::LaserScan &msg)
 
       if (obstacle)
       {
-      auto v_admissible = find_if(obstacles.begin(), obstacles.end(), 
-        [](t_helpers::ObstacleInfo &obstacle){
-        return obstacle.f() < S_MAX - .1f; // admissible if no free path is less than max stopping dist
-      }); 
+      float delta_theta = closest_pt.r() != 0 ? closest_pt.f() / closest_pt.r() : 3.14f;
+      float v_constraint = sqrt(2.0f * AC_MAX * closest_pt.f());
+      bool v_admissible =  (it_wind->x() <= v_constraint) && 
+          it_wind->y() <= sqrt(2.0f * WC_MAX * delta_theta);
 
-        if (v_admissible == obstacles.end())
+
+        if (v_admissible)
         { // velocity is admissible
           // compute score for each obstacle
+          atleast_one_admissible = true;
           for (auto it_ob = obstacles.begin(); it_ob != obstacles.end(); it_ob ++)
           {
             float score = t_helpers::CalculateScore(*it_wind, *it_ob, closest_pt);
@@ -257,11 +278,20 @@ void ScanOccurredCallback(const sensor_msgs::LaserScan &msg)
     ROS_INFO("ScanOccurredCallback: C_v: %f, C_w: %f, best_score: %f", 
       best_vel.x(), best_vel.y(), best_score);
 */
-    geometry_msgs::Twist msg;
-    msg.linear.x = best_vel.x();
-    msg.angular.z = best_vel.y();
-    g_DrivePub.publish(msg);
-
+    if (atleast_one_admissible)
+    {
+      geometry_msgs::Twist msg;
+      msg.linear.x = best_vel.x();
+      msg.angular.z = best_vel.y();
+      g_DrivePub.publish(msg);
+    }
+    else
+    {
+      geometry_msgs::Twist msg;
+      msg.linear.x = 0.0f;
+      msg.angular.z = .3f;
+      g_DrivePub.publish(msg);
+    }
   }
   else
   {
