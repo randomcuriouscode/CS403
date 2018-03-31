@@ -98,6 +98,7 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 		
 		Eigen::Vector2f best_vel = Eigen::Vector2f(g_v.x(), g_v.y());
 		float best_score = numeric_limits<float>::min();
+    bool atleast_one_admissible = false;
 
 		for (auto it_wind = disc_window.begin(); it_wind != disc_window.end(); it_wind++)
 		{ // iterate over each velocity in discrete window
@@ -105,14 +106,15 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 			t_helpers::ObstacleInfo closest_pt; // closest point for dyn window
       t_helpers::ObstacleExist(translated_pc, it_wind->x(), it_wind->y(), obstacles, closest_pt); // true if not obstacle free
 
-			auto v_admissible = find_if(obstacles.begin(), obstacles.end(), 
-				[](t_helpers::ObstacleInfo &obstacle){
-				return obstacle.f() < S_MAX; // admissible if no free path is less than max stopping dist
-			}); 
+			float delta_theta = closest_pt.r() != 0 ? closest_pt.f() / closest_pt.r() : 3.14f;
+      float v_constraint = sqrt(2.0f * AC_MAX * closest_pt.f());
+      bool v_admissible =  (it_wind->x() <= v_constraint) && 
+          it_wind->y() <= sqrt(2.0f * WC_MAX * delta_theta);
 
-			if (v_admissible == obstacles.end())
+			if (v_admissible)
 			{ // velocity is admissible
 				// compute score for each obstacle
+        atleast_one_admissible = true;
 				for (auto it_ob = obstacles.begin(); it_ob != obstacles.end(); it_ob ++)
 				{
 					float score = t_helpers::CalculateScore(*it_wind, *it_ob, closest_pt);
@@ -127,12 +129,23 @@ void ScanOccurredCallback (const sensor_msgs::LaserScan &msg)
 /*
 		ROS_INFO("ScanOccurredCallback: C_v: %f, C_w: %f, best_score: %f", 
 			best_vel.x(), best_vel.y(), best_score);
-*/
-		cobot_msgs::CobotDriveMsg msg;
-		msg.header = translated_pc.header;
-		msg.v = best_vel.x();
-		msg.w = best_vel.y();
-		g_DrivePub.publish(msg);
+*/  
+    if (atleast_one_admissible)
+    {
+  		cobot_msgs::CobotDriveMsg msg;
+  		msg.header = translated_pc.header;
+  		msg.v = best_vel.x();
+  		msg.w = best_vel.y();
+  		g_DrivePub.publish(msg);
+    }
+    else
+    {
+      cobot_msgs::CobotDriveMsg msg;
+      msg.header = translated_pc.header;
+      msg.v = 0.0f;
+      msg.w = .3f;
+      g_DrivePub.publish(msg);
+    }
 	}
 	else
 	{ // no subscribers, assume we are being tested for part 3 or 4
@@ -163,6 +176,8 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 	Eigen::Vector2f best_vel = Eigen::Vector2f(req.v_0, req.w_0);
 	float best_score = numeric_limits<float>::min();
 
+  bool atleast_one_admissible = false;
+
 	for (auto it_wind = disc_window.begin(); it_wind != disc_window.end(); it_wind++)
 		{ // iterate over each velocity in discrete window
 			vector< t_helpers::ObstacleInfo > obstacles; // computed obstacles for dyn window
@@ -177,6 +192,7 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 			if (v_admissible == obstacles.end())
 			{ // velocity is admissible
 				// compute score for each obstacle
+        atleast_one_admissible = true;
 				for (auto it_ob = obstacles.begin(); it_ob != obstacles.end(); it_ob ++)
 				{
 					float score = t_helpers::CalculateScore(*it_wind, *it_ob, closest_pt);
@@ -189,11 +205,19 @@ bool GetCommandVelCallback (compsci403_assignment4::GetCommandVelSrv::Request &r
 			}
 		}
 
+  if (atleast_one_admissible)
+  {
 	ROS_DEBUG("GetCommandVelCallback: C_v: %f, C_w: %f, best_score: %f", 
 		best_vel.x(), best_vel.y(), best_score);
 
 	res.C_v = best_vel.x();
 	res.C_w = best_vel.y();
+  }
+  else
+  {
+    res.C_w = 0.1f; // spin in place 
+    res.C_v = 0.0f;
+  }
 
 	g_TranslatedPC = sensor_msgs::PointCloud(); // reset the cached pointcloud
 	return true;
