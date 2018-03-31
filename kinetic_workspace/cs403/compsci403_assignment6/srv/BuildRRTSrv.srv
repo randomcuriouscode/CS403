@@ -1,0 +1,4 @@
+---
+# A list of all the RRT nodes in the tree. The goal node must be the first
+# element in the list.
+RRTNode[] rrt

@@ -1,0 +1,18 @@
+<package>
+  <description brief="compsci403_assignment6">
+
+     compsci403_assignment6
+
+  </description>
+  <author>Tiffany Q. Liu</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url></url>
+  <depend package="std_msgs"/>
+  <depend package="roscpp"/>
+  <depend package="rospy"/>
+  <depend package="visualization_msgs"/>
+
+</package>
+
+

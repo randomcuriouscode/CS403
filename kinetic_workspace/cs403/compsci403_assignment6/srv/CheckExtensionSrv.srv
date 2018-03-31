@@ -1,0 +1,4 @@
+geometry_msgs/Point q_near
+geometry_msgs/Point q_new
+---
+bool valid

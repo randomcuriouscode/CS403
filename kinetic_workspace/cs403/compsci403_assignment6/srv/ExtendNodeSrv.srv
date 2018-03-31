@@ -1,0 +1,5 @@
+geometry_msgs/Point[] P
+geometry_msgs/Point q
+---
+int32 q_near_index
+geometry_msgs/Point q_new
